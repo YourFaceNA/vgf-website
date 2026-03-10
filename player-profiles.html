@@ -1,0 +1,314 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VGF - Player Profiles</title>
+  <link rel="icon" href="images/logo.png" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar">
+    <a href="index.html" class="nav-logo">
+      <img src="images/logo.png" alt="VGF Logo" />
+      <!-- <div class="nav-logo-text">Video Game Festival</span></div> -->
+    </a>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="index.html">Home</a></li>   
+      <li><a href="past-events.html">Past Events</a></li>
+      <li><a href="rules.html">Rules</a></li>
+      <li><a href="beats-list.html">Beats List</a></li>
+      <li><a href="player-profiles.html" class="active">Player Profiles</a></li>
+    </ul>
+  </nav>
+
+  <div class="pixel-line"></div>
+
+  <!-- ===== PAGE HEADER ===== -->
+  <header class="page-header">
+    <h1>Player Profiles</h1>
+    <p>Meet the competitors of VGF — veterans and newcomers alike!</p>
+  </header>
+
+  <!-- ===== CONTENT ===== -->
+  <main class="content-section">
+
+    <!-- Leaderboard Highlight -->
+    <div style="background:linear-gradient(135deg,rgba(255,140,0,0.08),rgba(58,107,255,0.08));border:1px solid var(--border);border-radius:12px;padding:1.5rem 2rem;margin-bottom:3rem;text-align:center;">
+      <div style="font-family:'Press Start 2P',monospace;font-size:0.65rem;color:var(--gold);margin-bottom:0.5rem;letter-spacing:0.1em;">2025 Most Valuable Player</div>
+      <div style="font-size:3rem;margin:0.25rem 0;">🏆</div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:1rem;color:var(--gold);text-shadow:var(--glow-orange);">Trindominus</div>
+      <div style="color:var(--text-muted);font-size:0.85rem;margin-top:0.4rem;">5 Games Beaten &nbsp;·&nbsp; 1 Hero Beat</div>
+    </div>
+
+    <h2 class="section-title">All Players</h2>
+    <div class="section-divider"></div>
+
+    <div style="max-width:480px;margin:0 auto 2rem;position:relative;">
+      <input type="search" id="playerSearch" placeholder="Search players…"
+        style="width:100%;padding:0.75rem 1rem 0.75rem 2.75rem;background:#0d0d1a;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Press Start 2P',monospace;font-size:0.6rem;letter-spacing:0.05em;outline:none;box-sizing:border-box;transition:border-color 0.2s;"
+        oninput="filterPlayers(this.value)"
+        onfocus="this.style.borderColor='var(--blue-glow)'"
+        onblur="this.style.borderColor='var(--border)'" />
+      <span style="position:absolute;left:0.9rem;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:1rem;pointer-events:none;">🔍</span>
+    </div>
+    <p id="playerCount" style="text-align:center;font-family:'Press Start 2P',monospace;font-size:0.55rem;color:var(--text-muted);margin:-1rem 0 1.5rem;"></p>
+
+    <div class="players-grid" id="playersGrid">
+
+      <!-- Player 1 -->
+      <div class="player-card">
+         <div class="player-avatar" style="padding:0;overflow:hidden;"><img src="images/profiles/zophar321.jpg" alt="Jamal Nickens" style="width:100%;height:100%;object-fit:cover;" /></div>
+        <div class="player-info">
+          <h3>Jamal Nickens</h3>
+          <div class="player-tag">Zophar321</div>
+          <div class="player-stats">
+            <div class="stat">
+              <div class="stat-val">17</div>
+              <div class="stat-label">Events</div>
+            </div>
+            <div class="stat">
+              <div class="stat-val">133</div>
+              <div class="stat-label">Games</div>
+            </div>
+            <div class="stat">
+              <div class="stat-val">5</div>
+              <div class="stat-label">MVPs</div>
+            </div>
+          </div>
+          <div class="player-fave">Most Played Genre: <span>Beat 'em up</span></div>
+        </div>
+      </div>
+
+      <!-- Player 2 -->
+      <div class="player-card">
+         <div class="player-avatar" style="padding:0;overflow:hidden;"><img src="images/profiles/doa2.jpg" alt="Angel Rodriguez" style="width:100%;height:100%;object-fit:cover;" /></div>
+        <div class="player-info">
+          <h3>Angel R</h3>
+          <div class="player-tag">Trindominus</div>
+          <div class="player-stats">
+            <div class="stat">
+              <div class="stat-val">2</div>
+              <div class="stat-label">Events</div>
+            </div>
+            <div class="stat">
+              <div class="stat-val">17</div>
+              <div class="stat-label">Games</div>
+            </div>
+            <div class="stat">
+              <div class="stat-val">2</div>
+              <div class="stat-label">MVPs</div>
+            </div>
+          </div>
+          <div class="player-fave">Most Played Genre: <span>Beat 'em up</span></div>
+        </div>
+      </div>
+
+      <!-- Player 3 -->
+      <div class="player-card">
+         <div class="player-avatar" style="padding:0;overflow:hidden;"><img src="images/profiles/daddio.jpg" alt="Angel R" style="width:100%;height:100%;object-fit:cover;" /></div>
+        <div class="player-info">
+          <h3>Josh Wiegand</h3>
+          <div class="player-tag">SuperDaddio</div>
+          <div class="player-stats">
+            <div class="stat">
+              <div class="stat-val">4</div>
+              <div class="stat-label">Events</div>
+            </div>
+            <div class="stat">
+              <div class="stat-val">16</div>
+              <div class="stat-label">Games</div>
+            </div>
+            <div class="stat">
+              <div class="stat-val">1</div>
+              <div class="stat-label">MVPs</div>
+            </div>
+          </div>
+          <div class="player-fave">Most Played Genre: <span>Platformer</span></div>
+        </div>
+      </div>
+
+      <!-- Player 4 -->
+      <div class="player-card">
+         <div class="player-avatar" style="padding:0;overflow:hidden;"><img src="images/profiles/sb.jpg" alt="Angel R" style="width:100%;height:100%;object-fit:cover;" /></div>
+        <div class="player-info">
+          <h3>Scott Boggs</h3>
+          <div class="player-tag">Creamy Johnson</div>
+          <div class="player-stats">
+            <div class="stat">
+              <div class="stat-val">15</div>
+              <div class="stat-label">Events</div>
+            </div>
+            <div class="stat">
+              <div class="stat-val">114</div>
+              <div class="stat-label">Games</div>
+            </div>
+            <div class="stat">
+              <div class="stat-val">4</div>
+              <div class="stat-label">MVPs</div>
+            </div>
+          </div>
+          <div class="player-fave">Most Played Genre: <span>Platformer</span></div>
+        </div>
+      </div>
+
+      <!-- Player 5 -->
+      <div class="player-card">
+         <div class="player-avatar" style="padding:0;overflow:hidden;"><img src="images/profiles/bd.jpg" alt="Angel R" style="width:100%;height:100%;object-fit:cover;" /></div>
+        <div class="player-info">
+          <h3>Bryan Drapp</h3>
+          <div class="player-tag">CastorTroy321</div>
+          <div class="player-stats">
+            <div class="stat">
+              <div class="stat-val">10</div>
+              <div class="stat-label">Events</div>
+            </div>
+            <div class="stat">
+              <div class="stat-val">69</div>
+              <div class="stat-label">Games</div>
+            </div>
+            <div class="stat">
+              <div class="stat-val">3</div>
+              <div class="stat-label">MVPs</div>
+            </div>
+          </div>
+          <div class="player-fave">Most Played Genre: <span>Platformer</span></div>
+        </div>
+      </div>
+
+      <!-- Player 6 -->
+      <div class="player-card">
+         <div class="player-avatar" style="padding:0;overflow:hidden;"><img src="images/profiles/dd.jpg" alt="Angel R" style="width:100%;height:100%;object-fit:cover;" /></div>
+        <div class="player-info">
+          <h3>Darren Drapp</h3>
+          <div class="player-tag">TheGhoulLord</div>
+          <div class="player-stats">
+            <div class="stat">
+              <div class="stat-val">15</div>
+              <div class="stat-label">Events</div>
+            </div>
+            <div class="stat">
+              <div class="stat-val">54</div>
+              <div class="stat-label">Games</div>
+            </div>
+            <div class="stat">
+              <div class="stat-val">1</div>
+              <div class="stat-label">MVPs</div>
+            </div>
+          </div>
+          <div class="player-fave">Most Played Genre: <span>Platformer</span></div>
+        </div>
+      </div>
+
+      <!-- Player 7 -->
+      <div class="player-card">
+         <div class="player-avatar" style="padding:0;overflow:hidden;"><img src="images/profiles/jap2.jpg" alt="Angel R" style="width:100%;height:100%;object-fit:cover;" /></div>
+        <div class="player-info">
+          <h3>Jake Pfister</h3>
+          <div class="player-tag">Thirstee321</div>
+          <div class="player-stats">
+            <div class="stat">
+              <div class="stat-val">4</div>
+              <div class="stat-label">Events</div>
+            </div>
+            <div class="stat">
+              <div class="stat-val">32</div>
+              <div class="stat-label">Games</div>
+            </div>
+            <div class="stat">
+              <div class="stat-val">1</div>
+              <div class="stat-label">MVPs</div>
+            </div>
+          </div>
+          <div class="player-fave">Most Played Genre: <span>Adventure</span></div>
+        </div>
+      </div>
+
+            <!-- Player 8 -->
+      <div class="player-card">
+        <div class="player-avatar" style="padding:0;overflow:hidden;"><img src="images/profiles/face.png" alt="YourFace" style="width:100%;height:100%;object-fit:cover;" /></div>
+        <div class="player-info">
+          <h3>YourFace</h3>
+          <div class="player-tag">Face</div>
+          <div class="player-stats">
+            <div class="stat">
+              <div class="stat-val">1</div>
+              <div class="stat-label">Events</div>
+            </div>
+            <div class="stat">
+              <div class="stat-val">10</div>
+              <div class="stat-label">Games</div>
+            </div>
+            <div class="stat">
+              <div class="stat-val">0</div>
+              <div class="stat-label">MVPs</div>
+            </div>
+          </div>
+          <div class="player-fave">Most Played Genre: <span>Adventure</span></div>
+        </div>
+      </div>
+
+      <!-- Player 9 - New Registrant -->
+      <div class="player-card" style="border-color:rgba(57,255,20,0.3);">
+        <div class="player-avatar" style="background:linear-gradient(135deg,#0a2b0a,#143b14);">✨</div>
+        <div class="player-info">
+          <h3>You?</h3>
+          <div class="player-tag" style="color:var(--green-neon);">Register for 2026</div>
+          <div style="margin-top:0.75rem;font-size:0.85rem;color:var(--text-muted);line-height:1.7;">
+            Will you be the VGF 18 MVP? <strong style="color:var(--green-neon);">Sign up and make your mark!</strong>
+          </div>
+          <div style="margin-top:1rem;">
+            <a href="#" class="cta-btn" style="font-size:0.5rem;padding:0.6rem 1.25rem;background:linear-gradient(135deg,#0a3a0a,#1a7a1a);color:var(--green-neon);box-shadow:0 0 15px rgba(57,255,20,0.4);">Register Now</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Stats Note -->
+    <p style="text-align:center;color:var(--text-muted);font-size:0.8rem;margin-top:2rem;">
+      Stats reflect all-time VGF totals. Player profiles are updated after each annual event.
+    </p>
+
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer>
+    <img src="images/logo.png" alt="VGF Logo" class="footer-logo" />
+    <p>
+      VGF — Video Game Festival &copy; 2026<br />
+      <a href="past-events.html">Past Events</a> &nbsp;·&nbsp;
+      <a href="rules.html">Rules</a> &nbsp;·&nbsp;
+      <a href="beats-list.html">Beats List</a> &nbsp;·&nbsp;
+      <a href="player-profiles.html">Player Profiles</a>
+    </p>
+  </footer>
+
+  <script>
+    const toggle = document.getElementById('navToggle');
+    const links  = document.getElementById('navLinks');
+    toggle.addEventListener('click', () => links.classList.toggle('open'));
+    links.querySelectorAll('a').forEach(a => a.addEventListener('click', () => links.classList.remove('open')));
+
+    function filterPlayers(query) {
+      const q = query.trim().toLowerCase();
+      const cards = document.querySelectorAll('#playersGrid .player-card');
+      let visible = 0;
+      cards.forEach(card => {
+        const name = (card.querySelector('h3')?.textContent || '').toLowerCase();
+        const tag  = (card.querySelector('.player-tag')?.textContent || '').toLowerCase();
+        const show = !q || name.includes(q) || tag.includes(q);
+        card.style.display = show ? '' : 'none';
+        if (show) visible++;
+      });
+      const countEl = document.getElementById('playerCount');
+      countEl.textContent = q ? visible + ' player' + (visible !== 1 ? 's' : '') + ' found' : '';
+    }
+  </script>
+</body>
+</html>

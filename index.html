@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VGF - Home</title>
+  <link rel="icon" href="images/logo.png" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar">
+    <a href="index.html" class="nav-logo">
+      <img src="images/logo.png" alt="VGF Logo" />
+      <!-- <div class="nav-logo-text">Video Game Festival</span></div> -->
+    </a>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="past-events.html">Past Events</a></li>
+      <li><a href="rules.html">Rules</a></li>
+      <li><a href="beats-list.html">Beats List</a></li>
+      <li><a href="player-profiles.html">Player Profiles</a></li>
+    </ul>
+  </nav>
+
+  <div class="pixel-line"></div>
+
+  <!-- ===== HERO ===== -->
+  <section class="hero">
+    <div class="hero-slideshow" id="heroSlideshow">
+      <img src="images/Home Slideshow/pic1.jpg" alt="" class="active" />
+      <img src="images/Home Slideshow/pic2.jpg" alt="" />
+      <img src="images/Home Slideshow/pic3.jpg" alt="" />
+      <img src="images/Home Slideshow/pic4.jpg" alt="" />
+      <img src="images/Home Slideshow/pic5.jpg" alt="" />
+    </div>
+    <div class="hero-bg-grid"></div>
+    <div class="hero-orb hero-orb-1"></div>
+    <div class="hero-orb hero-orb-2"></div>
+
+    <img src="images/logo.png" alt="VGF Logo" class="hero-logo" />
+    <h1 class="hero-title">Beat Every Games. Raise Money.<br>Help the Kids.</h1>
+    <p class="hero-subtitle"><br></p>
+
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;position:relative;z-index:1;">
+      <a href="#next-event" class="cta-btn">Next Event ↓</a>
+      <!-- <a href="rules.html" class="cta-btn" style="background:linear-gradient(135deg,#1a3a8c,#3a6bff);color:#fff;box-shadow:var(--glow-blue);">View Rules</a> -->
+    </div>
+  </section>
+
+  <!-- ===== NEXT EVENT ===== -->
+  <section class="next-event-section" id="next-event">
+    <h2 class="section-title">Next Event</h2>
+    <div class="section-divider"></div>
+
+    <div class="next-event-inner">
+      <div class="next-event-img-wrap">
+        <img src="images/next-event.jpg" alt="VGF 2026 Event Info" />
+      </div>
+
+      <div class="next-event-info">
+        <h2>VGF 18 is Coming!</h2>
+        <div class="event-date-badge">July 30 — August 2, 2026</div>
+
+        <p style="color:var(--text-muted);font-size:0.95rem;margin-bottom:1.25rem;line-height:1.8;">
+          Join us for another incredible weekend of gaming, competition, and charity.
+          Gather your systems, pick your games, and let's make history together.
+        </p>
+
+        <ul class="goals-list">
+          <li>
+            <span class="goal-icon">🎮</span>
+            <span class="goal-beat">BEAT GAMES — smash through as many titles as you can in 4 days!</span>
+          </li>
+          <li>
+            <span class="goal-icon">❤️</span>
+            <span class="goal-raise">RAISE MONEY FOR CHILDREN — every run counts toward a great cause!</span>
+          </li>
+        </ul>
+
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+          <a href="https://www.twitch.tv/videogamefestival" class="cta-btn" style="background:linear-gradient(135deg,#551a8c,#853aff);color:#fff;box-shadow:var(--glow-blue);">Watch Live</a>
+          <a href="https://www.extra-life.org/participants/VGF" class="cta-btn" style="background:linear-gradient(135deg,#1a3a8c,#3a6bff);color:#fff;box-shadow:var(--glow-blue);">Donate to ExtraLife</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== QUICK INFO CARDS ===== -->
+  <section class="cards-section">
+    <h2 class="section-title">What is Video Game Festival?</h2>
+    <div class="section-divider"></div>
+
+    <div class="cards-grid">
+      <div class="card">
+        <div class="card-icon">🕹️</div>
+        <h3>Beat Games</h3>
+        <p>Players complete ("beat") as many video games as possible across a 4-day marathon event. Every genre, every platform — anything goes!</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">💰</div>
+        <h3>Raise Money</h3>
+        <p>All proceeds go to children's charities. Stream your runs, get donations, and show the world that gaming makes a difference.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🤝</div>
+        <h3>Community First</h3>
+        <p>VGF is built on friendship, fair play, and fun. New players and veterans alike are welcome — come hang, game, and give back.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer>
+    <img src="images/logo.png" alt="VGF Logo" class="footer-logo" />
+    <p>
+      VGF — Video Game Festival &copy; 2026<br />
+      <a href="past-events.html">Past Events</a> &nbsp;·&nbsp;
+      <a href="rules.html">Rules</a> &nbsp;·&nbsp;
+      <a href="beats-list.html">Beats List</a> &nbsp;·&nbsp;
+      <a href="player-profiles.html">Player Profiles</a>
+    </p>
+  </footer>
+
+  <script>
+    // Mobile nav toggle
+    const toggle = document.getElementById('navToggle');
+    const links  = document.getElementById('navLinks');
+    toggle.addEventListener('click', () => links.classList.toggle('open'));
+
+    // Close nav on link click (mobile)
+    links.querySelectorAll('a').forEach(a => a.addEventListener('click', () => links.classList.remove('open')));
+
+    // Highlight active page
+    const path = window.location.pathname.split('/').pop() || 'index.html';
+    links.querySelectorAll('a').forEach(a => {
+      if (a.getAttribute('href') === path) a.classList.add('active');
+    });
+
+    // Hero slideshow
+    const slides = document.querySelectorAll('#heroSlideshow img');
+    let current = 0;
+    setInterval(() => {
+      slides[current].classList.remove('active');
+      current = (current + 1) % slides.length;
+      slides[current].classList.add('active');
+    }, 4000);
+  </script>
+</body>
+</html>
