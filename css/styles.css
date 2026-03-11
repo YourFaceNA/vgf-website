@@ -251,7 +251,8 @@ body {
 
 .hero-title {
   font-family: 'Press Start 2P', monospace;
-  font-size: clamp(1rem, 5vw, 1.5rem);
+  font-size: clamp(0.3rem, 3.25vw, 1.5rem);
+  white-space: nowrap;
   background: var(--blue-glow);
   /* background: linear-gradient(135deg, var(--orange) 0%, var(--gold) 50%, var(--orange) 100%); */
   -webkit-background-clip: text;
@@ -798,7 +799,7 @@ footer a {
 }
 
 /* ---- Responsive ---- */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .navbar { padding: 0 1rem; }
 
   .nav-toggle { display: flex; }
@@ -822,7 +823,7 @@ footer a {
 
   .next-event-inner { grid-template-columns: 1fr; }
 
-  .hero-title { font-size: 1.4rem; }
+
 }
 
 @media (max-width: 480px) {
