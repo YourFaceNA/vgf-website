@@ -13,6 +13,7 @@
 }
 
 :root {
+  --navbar-height: 70px;   /* matches .navbar height — used by sticky controls on sub-pages */
   --orange:      #FF8C00;
   --gold:        #FFD700;
   --orange-dark: #cc5500;
