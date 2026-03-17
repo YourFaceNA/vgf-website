@@ -65,16 +65,16 @@
       /* Xbox — Orbitron 700 0.65rem, Xbox green */
       .sys-xbox, .sys-xbox-360, .sys-xbla, .sys-xbox-one, .sys-xbox-series-x {
         font-family:'Orbitron',sans-serif; font-weight:700; font-size:0.65rem; letter-spacing:0.06em;
-        color:#6abf69; border-color:#107c10; text-shadow:0 0 8px rgba(16,124,16,0.55); }
+        color:#449e43; border-color:#478d22; text-shadow:0 0 8px rgba(16,124,16,0.55); }
       .sys-xbox { background:#000; }
-      .sys-xbox-360, .sys-xbla { background:#d1d1d1; }
-      .sys-xbox-one { background:#1f381f; }
+      .sys-xbox-360, .sys-xbla { background:#d9d9d9; border-color:#93c66f}
+      .sys-xbox-one { background:#0E7A0D; }
       .sys-xbox-series-x { background:#dfdfdf; }
 
       /* PlayStation (PS1-PS3) — Exo 2 900 */
       .sys-playstation, .sys-ps2, .sys-ps3 { font-family:'Exo 2',sans-serif; font-weight:900; }
       .sys-playstation { font-style:italic; background:#7f7f81; color:#c8d8f8; border-color:#4a5fa0; }
-      .sys-ps2 { background:#192035; color:#5b9fff; border-color:#003087; }
+      .sys-ps2 { background:#0f0f11; color:#5b9fff; border-color:#003087; }
       .sys-ps3 { font-style:italic; letter-spacing:0.02em; background:#18224b; color:#7ab0ff; border-color:#0050c8; }
 
       /* PS4 / PS5 — Orbitron 700 0.65rem */
@@ -103,7 +103,7 @@
       .sys-n64, .sys-gamecube, .sys-wii, .sys-switch, .sys-switch-2, .sys-nintendo-ds, .sys-3ds {
         font-family:'Nunito',sans-serif; font-weight:800; }
       .sys-n64 { letter-spacing:0.03em; background:#000; color:#ff8080; border-color:#c80000; }
-      .sys-gamecube { letter-spacing:0.02em; background:#503e7a; color:#a78bfa; border-color:#5a1ec8; }
+      .sys-gamecube { letter-spacing:0.02em; background:#000000; color:#a78bfa; border-color:#4b44a0; }
       .sys-wii { letter-spacing:0.04em; background:#282830; color:#e0e0e8; border-color:#aaaabc; }
       .sys-switch, .sys-switch-2 { letter-spacing:0.02em; background:#2a0005; color:#ff4757; border-color:#e4000f; }
       .sys-nintendo-ds { background:#e6e6e6; color:#60a5fa; border-color:#0064b4; }
@@ -135,7 +135,7 @@
       /* Sega Master System — Russo One italic 0.03em */
       .sys-sega-master-system {
         font-family:'Russo One',sans-serif; font-style:italic; letter-spacing:0.03em;
-        background:#ffffff; color:#f87171; border-color:#c80000; }
+        background:#ffffff; color:#f87171; border-color:#000000; }
 
       /* Neo Geo — Orbitron 700 0.62rem 0.06em, gold */
       .sys-neo-geo, .sys-neo-geo-pocket {
