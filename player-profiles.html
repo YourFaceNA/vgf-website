@@ -62,7 +62,7 @@
     <div class="players-grid" id="playersGrid">
 
       <!-- Player 1 -->
-      <div class="player-card">
+      <div class="player-card" data-player-key="Jamal Nickens" data-player-handle="Zophar321" data-player-img="images/Profiles/zophar321.jpg" data-location="Macedonia, OH" data-debut="VGF 1" data-best-beat="Battletoads" data-worst-beat="Barney's Hide and Seek">
          <div class="player-avatar" style="padding:0;overflow:hidden;"><img src="images/Profiles/zophar321.jpg" alt="Zophar321" style="width:100%;height:100%;object-fit:cover;" /></div>
         <div class="player-info">
           <h3>Zophar321</h3>
@@ -86,7 +86,7 @@
       </div>
 
       <!-- Player 2 -->
-      <div class="player-card">
+      <div class="player-card" data-player-key="Angel R" data-player-handle="Trindominus" data-player-img="images/Profiles/doa2.jpg" data-location="" data-debut="VGF 16 (2024)" data-best-beat="" data-worst-beat="">
          <div class="player-avatar" style="padding:0;overflow:hidden;"><img src="images/Profiles/doa2.jpg" alt="Trindominus" style="width:100%;height:100%;object-fit:cover;" /></div>
         <div class="player-info">
           <h3>Trindominus</h3>
@@ -110,7 +110,7 @@
       </div>
 
       <!-- Player 3 -->
-      <div class="player-card">
+      <div class="player-card" data-player-key="Josh Wiegand" data-player-handle="SuperDaddio" data-player-img="images/Profiles/daddio.jpg" data-location="" data-debut="" data-best-beat="" data-worst-beat="">
          <div class="player-avatar" style="padding:0;overflow:hidden;"><img src="images/Profiles/daddio.jpg" alt="SuperDaddio" style="width:100%;height:100%;object-fit:cover;" /></div>
         <div class="player-info">
           <h3>SuperDaddio</h3>
@@ -134,7 +134,7 @@
       </div>
 
       <!-- Player 4 -->
-      <div class="player-card">
+      <div class="player-card" data-player-key="Scott Boggs" data-player-handle="Creamy Johnson" data-player-img="images/Profiles/sb.jpg" data-location="" data-debut="" data-best-beat="" data-worst-beat="">
          <div class="player-avatar" style="padding:0;overflow:hidden;"><img src="images/Profiles/sb.jpg" alt="Creamy Johnson" style="width:100%;height:100%;object-fit:cover;" /></div>
         <div class="player-info">
           <h3>Creamy Johnson</h3>
@@ -158,7 +158,7 @@
       </div>
 
       <!-- Player 5 -->
-      <div class="player-card">
+      <div class="player-card" data-player-key="Bryan Drapp" data-player-handle="CastorTroy321" data-player-img="images/Profiles/bd.jpg" data-location="" data-debut="" data-best-beat="" data-worst-beat="">
          <div class="player-avatar" style="padding:0;overflow:hidden;"><img src="images/Profiles/bd.jpg" alt="CastorTroy321" style="width:100%;height:100%;object-fit:cover;" /></div>
         <div class="player-info">
           <h3>CastorTroy321</h3>
@@ -182,7 +182,7 @@
       </div>
 
       <!-- Player 6 -->
-      <div class="player-card">
+      <div class="player-card" data-player-key="Darren Drapp" data-player-handle="TheGhoulLord" data-player-img="images/Profiles/dd.jpg" data-location="" data-debut="" data-best-beat="" data-worst-beat="">
          <div class="player-avatar" style="padding:0;overflow:hidden;"><img src="images/Profiles/dd.jpg" alt="TheGhoulLord" style="width:100%;height:100%;object-fit:cover;" /></div>
         <div class="player-info">
           <h3>TheGhoulLord</h3>
@@ -206,7 +206,7 @@
       </div>
 
       <!-- Player 7 -->
-      <div class="player-card">
+      <div class="player-card" data-player-key="Jake Pfister" data-player-handle="Thirstee321" data-player-img="images/Profiles/jap2.jpg" data-location="" data-debut="" data-best-beat="" data-worst-beat="">
          <div class="player-avatar" style="padding:0;overflow:hidden;"><img src="images/Profiles/jap2.jpg" alt="Thirstee321" style="width:100%;height:100%;object-fit:cover;" /></div>
         <div class="player-info">
           <h3>Thirstee321</h3>
@@ -230,7 +230,7 @@
       </div>
 
             <!-- Player 8 -->
-      <div class="player-card">
+      <div class="player-card" data-player-key="YourFace" data-player-handle="YourFace" data-player-img="images/Profiles/face.png" data-location="" data-debut="" data-best-beat="" data-worst-beat="">
         <div class="player-avatar" style="padding:0;overflow:hidden;"><img src="images/Profiles/face.png" alt="YourFace" style="width:100%;height:100%;object-fit:cover;" /></div>
         <div class="player-info">
           <h3>YourFace</h3>
@@ -277,6 +277,26 @@
 
   </main>
 
+  <!-- ===== PLAYER PROFILE MODAL ===== -->
+  <div id="playerModal" class="player-modal-overlay" hidden aria-modal="true" role="dialog" aria-label="Player Details">
+    <div class="player-modal-box">
+      <button class="player-modal-close" id="modalClose" aria-label="Close">&times;</button>
+      <div class="player-modal-header">
+        <div class="player-modal-avatar" id="modalAvatar"></div>
+        <div>
+          <div class="player-modal-name" id="modalName"></div>
+          <div class="player-modal-tag" id="modalTag"></div>
+          <div class="player-modal-info-lines" id="modalInfoLines"></div>
+        </div>
+      </div>
+      <div class="player-modal-stats" id="modalStats"></div>
+      <div class="player-modal-games">
+        <h3>Games Beaten</h3>
+        <div id="modalGamesList"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== FOOTER ===== -->
   <footer>
     <img src="images/logo.png" alt="VGF Logo" class="footer-logo" />
@@ -290,11 +310,13 @@
   </footer>
 
   <script>
+    /* ---- Navbar ---- */
     const toggle = document.getElementById('navToggle');
     const links  = document.getElementById('navLinks');
     toggle.addEventListener('click', () => links.classList.toggle('open'));
     links.querySelectorAll('a').forEach(a => a.addEventListener('click', () => links.classList.remove('open')));
 
+    /* ---- Player search filter ---- */
     function filterPlayers(query) {
       const q = query.trim().toLowerCase();
       const cards = document.querySelectorAll('#playersGrid .player-card');
@@ -309,6 +331,195 @@
       const countEl = document.getElementById('playerCount');
       countEl.textContent = q ? visible + ' player' + (visible !== 1 ? 's' : '') + ' found' : '';
     }
+
+    /* ---- Player Profile Modal ---- */
+    const PLAYER_SEP = /\s*\/\s*|\s*&\s*|\s*,\s*/;
+    let allGamesCache = null;
+
+    async function loadAllGames() {
+      if (allGamesCache) return allGamesCache;
+      const resp = await fetch('beats-list.html');
+      const html = await resp.text();
+      // Find where ALL_DATA starts and extract the bracketed JSON array
+      const startIdx = html.indexOf('const ALL_DATA =');
+      if (startIdx === -1) return [];
+      const arrStart = html.indexOf('[', startIdx);
+      if (arrStart === -1) return [];
+      // Walk to find the matching closing bracket
+      let depth = 0, i = arrStart, arrEnd = -1;
+      for (; i < html.length; i++) {
+        if (html[i] === '[') depth++;
+        else if (html[i] === ']') { depth--; if (depth === 0) { arrEnd = i; break; } }
+      }
+      const match = arrEnd !== -1 ? [null, html.slice(arrStart, arrEnd + 1)] : null;
+      if (!match) return [];
+      allGamesCache = JSON.parse(match[1]);
+      return allGamesCache;
+    }
+
+    function playerInGame(playersStr, playerKey) {
+      return playersStr.split(PLAYER_SEP).map(p => p.trim()).some(p => p === playerKey);
+    }
+
+    function escHtml(s) {
+      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function topValue(arr) {
+      if (!arr.length) return null;
+      const freq = {};
+      arr.forEach(v => { freq[v] = (freq[v] || 0) + 1; });
+      return Object.entries(freq).sort((a,b) => b[1]-a[1])[0][0];
+    }
+
+    async function openPlayerModal(card) {
+      const playerKey = card.dataset.playerKey;
+      if (!playerKey) return;
+
+      const handle   = card.querySelector('h3')?.textContent || card.dataset.playerHandle || '';
+      const realName = card.querySelector('.player-tag')?.textContent || '';
+      const imgSrc   = card.dataset.playerImg || '';
+      const location  = card.dataset.location  || '';
+      const bestBeat  = card.dataset.bestBeat  || '';
+      const worstBeat = card.dataset.worstBeat || '';
+      const debut     = card.dataset.debut     || '';
+
+      /* Grab stat vals from the card */
+      const statVals = [...card.querySelectorAll('.stat-val')].map(el => el.textContent);
+      const statLabels = [...card.querySelectorAll('.stat-label')].map(el => el.textContent);
+
+      /* Show modal immediately with loading state */
+      const modal = document.getElementById('playerModal');
+
+      /* Avatar */
+      const avatarEl = document.getElementById('modalAvatar');
+      avatarEl.innerHTML = imgSrc
+        ? `<img src="${escHtml(imgSrc)}" alt="${escHtml(handle)}" />`
+        : handle.charAt(0);
+
+      document.getElementById('modalName').textContent = handle;
+      document.getElementById('modalTag').textContent = realName;
+
+      function infoLine(label, val) {
+        if (!val) return '';
+        return `<div class="player-modal-info-line"><span class="info-label">${label}</span><span class="info-val">${escHtml(val)}</span></div>`;
+      }
+      document.getElementById('modalInfoLines').innerHTML =
+        infoLine('📍', location) +
+        infoLine('🎮 Debut:', debut) +
+        infoLine('🏆 Best Beat:', bestBeat) +
+        infoLine('💀 Worst Beat:', worstBeat);
+
+      /* Stats row from card */
+      const statsEl = document.getElementById('modalStats');
+      statsEl.innerHTML = statVals.map((v,i) => `
+        <div class="player-modal-stat">
+          <div class="player-modal-stat-val">${escHtml(v)}</div>
+          <div class="player-modal-stat-label">${escHtml(statLabels[i] || '')}</div>
+        </div>`).join('');
+
+      document.getElementById('modalGamesList').innerHTML =
+        '<div class="player-modal-loading">Loading games…</div>';
+
+      modal.hidden = false;
+      document.body.style.overflow = 'hidden';
+
+      /* Load & render games */
+      try {
+        const allGames = await loadAllGames();
+
+        // Build list of { parent, subs } where player appears in parent and/or subs
+        const matchedEntries = [];
+        allGames.forEach(r => {
+          if (r.is_sub) return;
+          const inParent = playerInGame(r.players || '', playerKey);
+          const matchingSubs = (r.subs || []).filter(s => playerInGame(s.players || '', playerKey));
+          if (inParent || matchingSubs.length) {
+            matchedEntries.push({ parent: r, inParent, matchingSubs });
+          }
+        });
+
+        // Flatten all records the player personally played for stat computation
+        const directRecords = [];
+        matchedEntries.forEach(({ parent, inParent, matchingSubs }) => {
+          if (inParent) directRecords.push(parent);
+          matchingSubs.forEach(s => directRecords.push({ ...s, event: parent.event }));
+        });
+
+        /* Compute extra stats */
+        const heroBeats = directRecords.filter(r => r.hero_beat).length;
+        const topGenre  = topValue(directRecords.map(r => r.genre).filter(Boolean));
+        const topSystem = topValue(directRecords.map(r => r.system).filter(Boolean));
+
+        /* Append computed stats */
+        if (heroBeats > 0 || topGenre || topSystem) {
+          const extras = [];
+          if (heroBeats) extras.push(`<div class="player-modal-stat"><div class="player-modal-stat-val">${heroBeats}</div><div class="player-modal-stat-label">Hero Beats</div></div>`);
+          if (topGenre)  extras.push(`<div class="player-modal-stat"><div class="player-modal-stat-val" style="font-size:0.5rem;color:var(--blue-glow)">${escHtml(topGenre)}</div><div class="player-modal-stat-label">Top Genre</div></div>`);
+          if (topSystem) extras.push(`<div class="player-modal-stat"><div class="player-modal-stat-val" style="font-size:0.5rem;color:var(--green-neon)">${escHtml(topSystem)}</div><div class="player-modal-stat-label">Top System</div></div>`);
+          statsEl.innerHTML += extras.join('');
+        }
+
+        function gameRowHtml(r, event, isSub, n) {
+          const hero = r.hero_beat ? ' <span class="player-modal-hero">Hero Beat</span>' : '';
+          return `<div class="player-modal-game-row${isSub ? ' player-modal-game-sub' : ''}">
+            <div class="player-modal-game-num">${isSub ? '↳' : n}</div>
+            <div class="player-modal-game-name">${escHtml(r.game)}${hero}</div>
+            <div class="player-modal-game-event">${escHtml(event || r.event)}</div>
+            <div class="player-modal-game-system">${escHtml(r.system)}</div>
+            <div class="player-modal-game-genre">${escHtml(r.genre)}</div>
+          </div>`;
+        }
+
+        /* Render games list */
+        if (!matchedEntries.length) {
+          document.getElementById('modalGamesList').innerHTML =
+            '<div class="player-modal-no-games">No games recorded yet.</div>';
+        } else {
+          let n = 0;
+          const rows = [];
+          matchedEntries.forEach(({ parent, inParent, matchingSubs }) => {
+            // Only show parent row if player is actually on it
+            if (inParent) {
+              n++;
+              rows.push(gameRowHtml(parent, parent.event, false, n));
+            }
+            // Each matching sub row gets its own count; indented only when parent is also visible
+            matchingSubs.forEach(s => {
+              n++;
+              rows.push(gameRowHtml(s, parent.event, inParent, n));
+            });
+          });
+          document.getElementById('modalGamesList').innerHTML = rows.join('');
+        }
+      } catch(e) {
+        document.getElementById('modalGamesList').innerHTML =
+          '<div class="player-modal-no-games">Could not load game data.</div>';
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('playerModal').hidden = true;
+      document.body.style.overflow = '';
+    }
+
+    /* Wire up card clicks */
+    document.querySelectorAll('#playersGrid .player-card[data-player-key]').forEach(card => {
+      card.addEventListener('click', () => openPlayerModal(card));
+    });
+
+    /* Close button */
+    document.getElementById('modalClose').addEventListener('click', closeModal);
+
+    /* Close on overlay click */
+    document.getElementById('playerModal').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeModal();
+    });
+
+    /* Close on Escape */
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeModal();
+    });
   </script>
 </body>
 </html>
