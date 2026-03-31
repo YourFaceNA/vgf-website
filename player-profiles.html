@@ -32,7 +32,7 @@
   <!-- ===== PAGE HEADER ===== -->
   <header class="page-header">
     <h1>Player Profiles</h1>
-    <p>Meet the competitors of VGF — veterans and newcomers alike!</p>
+    <p>Meet the competitors of VGF — veterans and newcomers alike! <br> (10 beats are required to earn a profile card)</p>
   </header>
 
   <!-- ===== CONTENT ===== -->
@@ -49,13 +49,24 @@
     <h2 class="section-title">All Players</h2>
     <div class="section-divider"></div>
 
-    <div style="max-width:480px;margin:0 auto 2rem;position:relative;">
-      <input type="search" id="playerSearch" placeholder="Search players…"
-        style="width:100%;padding:0.75rem 1rem 0.75rem 2.75rem;background:#0d0d1a;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Press Start 2P',monospace;font-size:0.6rem;letter-spacing:0.05em;outline:none;box-sizing:border-box;transition:border-color 0.2s;"
-        oninput="filterPlayers(this.value)"
+    <div style="max-width:600px;margin:0 auto 2rem;display:flex;gap:0.75rem;align-items:center;">
+      <div style="flex:1;position:relative;">
+        <input type="search" id="playerSearch" placeholder="Search players…"
+          style="width:100%;padding:0.75rem 1rem 0.75rem 2.75rem;background:#0d0d1a;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Press Start 2P',monospace;font-size:0.6rem;letter-spacing:0.05em;outline:none;box-sizing:border-box;transition:border-color 0.2s;"
+          oninput="filterPlayers(this.value)"
+          onfocus="this.style.borderColor='var(--blue-glow)'"
+          onblur="this.style.borderColor='var(--border)'" />
+        <span style="position:absolute;left:0.9rem;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:1rem;pointer-events:none;">🔍</span>
+      </div>
+      <select id="playerSort" onchange="sortPlayers(this.value)"
+        style="padding:0.75rem 0.75rem;background:#0d0d1a;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Press Start 2P',monospace;font-size:0.55rem;outline:none;cursor:pointer;transition:border-color 0.2s;white-space:nowrap;"
         onfocus="this.style.borderColor='var(--blue-glow)'"
-        onblur="this.style.borderColor='var(--border)'" />
-      <span style="position:absolute;left:0.9rem;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:1rem;pointer-events:none;">🔍</span>
+        onblur="this.style.borderColor='var(--border)'">
+        <option value="">Sort By</option>
+        <option value="games">Most Games</option>
+        <option value="events">Most Events</option>
+        <option value="mvps">Most MVPs</option>
+      </select>
     </div>
     <p id="playerCount" style="text-align:center;font-family:'Press Start 2P',monospace;font-size:0.55rem;color:var(--text-muted);margin:-1rem 0 1.5rem;"></p>
 
@@ -117,11 +128,11 @@
           <div class="player-tag">Josh Wiegand</div>
           <div class="player-stats">
             <div class="stat">
-              <div class="stat-val">4</div>
+              <div class="stat-val">6</div>
               <div class="stat-label">Events</div>
             </div>
             <div class="stat">
-              <div class="stat-val">16</div>
+              <div class="stat-val">20</div>
               <div class="stat-label">Games</div>
             </div>
             <div class="stat">
@@ -260,7 +271,7 @@
           <h3>You?</h3>
           <div class="player-tag" style="color:var(--green-neon);">Register for 2026</div>
           <div style="margin-top:0.75rem;font-size:0.85rem;color:var(--text-muted);line-height:1.7;">
-            Will you be the VGF 18 MVP? <strong style="color:var(--green-neon);">Sign up and make your mark!</strong>
+            Want a profile card too? <strong style="color:var(--green-neon);">Sign up, beat 10 games, and make your mark!</strong>
           </div>
           <div style="margin-top:1rem;">
             <!-- <a href="#" class="cta-btn" style="font-size:0.5rem;padding:0.6rem 1.25rem;background:linear-gradient(135deg,#0a3a0a,#1a7a1a);color:var(--green-neon);box-shadow:0 0 15px rgba(57,255,20,0.4);">Register Now</a> -->
@@ -330,6 +341,40 @@
       });
       const countEl = document.getElementById('playerCount');
       countEl.textContent = q ? visible + ' player' + (visible !== 1 ? 's' : '') + ' found' : '';
+    }
+
+    let shuffledOrder = [];
+    (function shuffleOnLoad() {
+      const grid   = document.getElementById('playersGrid');
+      const all    = [...grid.querySelectorAll('.player-card')];
+      const pinned = all.filter(c => !c.dataset.playerKey);
+      const cards  = all.filter(c =>  c.dataset.playerKey);
+      for (let i = cards.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cards[i], cards[j]] = [cards[j], cards[i]];
+      }
+      shuffledOrder = [...cards, ...pinned];
+      shuffledOrder.forEach(c => grid.appendChild(c));
+    })();
+
+    function sortPlayers(by) {
+      const grid = document.getElementById('playersGrid');
+      if (!by) {
+        shuffledOrder.forEach(c => grid.appendChild(c));
+        return;
+      }
+      const cards = [...grid.querySelectorAll('.player-card')];
+      const labelMap = { games: 'Games', events: 'Events', mvps: 'MVPs' };
+      const label = labelMap[by];
+      cards.sort((a, b) => {
+        const getVal = card => {
+          const labels = [...card.querySelectorAll('.stat-label')];
+          const idx = labels.findIndex(el => el.textContent === label);
+          return idx !== -1 ? parseInt(card.querySelectorAll('.stat-val')[idx]?.textContent || '0', 10) : 0;
+        };
+        return getVal(b) - getVal(a);
+      });
+      cards.forEach(card => grid.appendChild(card));
     }
 
     /* ---- Player Profile Modal ---- */
