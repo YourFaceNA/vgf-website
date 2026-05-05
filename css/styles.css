@@ -454,7 +454,7 @@ body {
 
 /* ---- Content Pages ---- */
 .content-section {
-  max-width: 1000px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 3rem 2rem 5rem;
 }
@@ -588,7 +588,7 @@ body {
 .players-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1.5rem;
+  gap: 1.75rem;
 }
 
 .player-card {
@@ -934,7 +934,7 @@ body {
 /* ---- Past Events ---- */
 .past-events-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
   gap: 1.75rem;
 }
 
@@ -963,9 +963,23 @@ body {
   overflow: hidden;
 }
 
-.past-event-banner-2024 { background: linear-gradient(135deg, #1a0a3b, #0d1b4b); }
-.past-event-banner-2023 { background: linear-gradient(135deg, #0a2b1a, #0d3b1b); }
-.past-event-banner-2022 { background: linear-gradient(135deg, #2b0a0a, #3b1a0a); }
+.past-event-banner-vgf1  { background: linear-gradient(135deg, #1a0a3b, #0d1b4b); }
+.past-event-banner-vgf2  { background: linear-gradient(135deg, #0a2b1a, #0d3b1b); }
+.past-event-banner-vgf3  { background: linear-gradient(135deg, #2b0a0a, #3b1a0a); }
+.past-event-banner-vgf4  { background: linear-gradient(135deg, #0a1a2b, #0d2b3b); }
+.past-event-banner-vgf5  { background: linear-gradient(135deg, #2b1a00, #3b2a00); }
+.past-event-banner-vgf6  { background: linear-gradient(135deg, #1a002b, #2b0040); }
+.past-event-banner-vgf7  { background: linear-gradient(135deg, #002b1a, #004030); }
+.past-event-banner-vgf8  { background: linear-gradient(135deg, #2b0010, #3b001a); }
+.past-event-banner-vgf9  { background: linear-gradient(135deg, #001a2b, #00253b); }
+.past-event-banner-vgf10 { background: linear-gradient(135deg, #1a1a00, #2b2b00); }
+.past-event-banner-vgf11 { background: linear-gradient(135deg, #0a0a2b, #14144b); }
+.past-event-banner-vgf12 { background: linear-gradient(135deg, #2b0a1a, #3b0020); }
+.past-event-banner-vgf13 { background: linear-gradient(135deg, #002b2b, #004040); }
+.past-event-banner-vgf14 { background: linear-gradient(135deg, #1a0a00, #2b1500); }
+.past-event-banner-vgf15 { background: linear-gradient(135deg, #00100a, #001a10); }
+.past-event-banner-vgf16 { background: linear-gradient(135deg, #10001a, #1a0028); }
+.past-event-banner-vgf17 { background: linear-gradient(135deg, #1a1000, #2b2000); }
 
 .past-event-body {
   padding: 1.25rem;
