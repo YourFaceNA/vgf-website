@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "firebase-admin": "^14.0.0",
+    "node-html-parser": "^7.1.0"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      "firestore.rules",
+      "storage.rules",
+      "scripts/**",
+      "node_modules/**",
+      ".gitignore",
+      "*.xlsx",
+      "*.ps1"
+    ]
+  }
+}

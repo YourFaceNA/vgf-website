@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VGF Admin</title>
+  <link rel="icon" href="images/logo.png" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Russo+One&display=swap" />
+  <style>
+    /* ── Admin layout ────────────────────────────────────── */
+    .admin-wrap {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    /* Auth screen */
+    #authScreen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      gap: 1.5rem;
+      text-align: center;
+    }
+    #authScreen h2 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.85rem;
+      color: var(--orange);
+      text-shadow: var(--glow-orange, 0 0 12px rgba(255,140,0,0.6));
+    }
+    #authScreen p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      max-width: 400px;
+    }
+
+    /* Sign-in / sign-out buttons */
+    .btn-google {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.85rem 1.75rem;
+      background: #fff;
+      color: #333;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: box-shadow 0.2s;
+    }
+    .btn-google:hover { box-shadow: 0 4px 20px rgba(255,140,0,0.4); }
+    .btn-google svg { width: 20px; height: 20px; flex-shrink: 0; }
+
+    .btn-signout {
+      padding: 0.45rem 1rem;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      font-family: 'Exo 2', sans-serif;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .btn-signout:hover { border-color: var(--orange); color: var(--orange); }
+
+    /* Admin header bar */
+    #adminHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    #adminHeader h1 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.8rem;
+      color: var(--orange);
+    }
+    #adminUserInfo {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    /* Section cards */
+    .admin-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+    .admin-section h2 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.65rem;
+      color: var(--gold);
+      margin-bottom: 1.5rem;
+      letter-spacing: 0.08em;
+    }
+
+    /* Form grid */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 600px) {
+      .form-grid { grid-template-columns: 1fr; }
+    }
+    .form-grid .full-width { grid-column: 1 / -1; }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .field label {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.5rem;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+    .field input[type="text"],
+    .field input[type="number"],
+    .field input[type="file"],
+    .field select,
+    .field textarea {
+      background: #0d0d1a;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--white);
+      font-family: 'Exo 2', sans-serif;
+      font-size: 0.9rem;
+      padding: 0.6rem 0.8rem;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+    .field textarea { resize: vertical; min-height: 80px; }
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus { border-color: var(--blue-glow); }
+    .field input[type="file"] { padding: 0.45rem 0.8rem; cursor: pointer; }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.5rem 0;
+    }
+    .checkbox-row label {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.5rem;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+    .checkbox-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--orange);
+      cursor: pointer;
+    }
+
+    /* Submit button */
+    .btn-submit {
+      margin-top: 1.25rem;
+      padding: 0.8rem 2rem;
+      background: linear-gradient(135deg, var(--orange-dark), var(--orange));
+      border: none;
+      border-radius: 8px;
+      color: var(--white);
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.55rem;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      transition: opacity 0.2s, box-shadow 0.2s;
+    }
+    .btn-submit:hover:not(:disabled) { opacity: 0.9; box-shadow: 0 4px 20px rgba(255,140,0,0.5); }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Status messages */
+    .form-status {
+      margin-top: 0.75rem;
+      font-size: 0.85rem;
+      min-height: 1.2em;
+    }
+    .form-status.success { color: var(--green-neon); }
+    .form-status.error   { color: var(--red-bright, #ff2244); }
+
+    /* Access denied */
+    #deniedScreen {
+      text-align: center;
+      padding: 4rem 1rem;
+    }
+    #deniedScreen h2 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.75rem;
+      color: var(--red-bright, #ff2244);
+      margin-bottom: 1rem;
+    }
+    #deniedScreen p { color: var(--text-muted); }
+
+    /* Hidden until auth state resolves */
+    [hidden] { display: none !important; }
+
+    /* Pixel separator line */
+    .pixel-line {
+      height: 3px;
+      background: linear-gradient(90deg, transparent, var(--orange), var(--gold), var(--orange), transparent);
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar">
+    <a href="index.html" class="nav-logo">
+      <img src="images/logo.png" alt="VGF Logo" />
+    </a>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="past-events.html">Past Events</a></li>
+      <li><a href="rules.html">Rules</a></li>
+      <li><a href="beats-list.html">Beats List</a></li>
+      <li><a href="player-profiles.html">Player Profiles</a></li>
+    </ul>
+  </nav>
+
+  <div class="pixel-line"></div>
+
+  <div class="admin-wrap">
+
+    <!-- ── Sign-in screen (shown when logged out) ───────────── -->
+    <div id="authScreen">
+      <h2>Admin Access</h2>
+      <p>Sign in with your authorized Google account to manage VGF data.</p>
+      <button class="btn-google" id="signInBtn">
+        <!-- Google "G" logo -->
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          <path fill="none" d="M0 0h48v48H0z"/>
+        </svg>
+        Sign in with Google
+      </button>
+    </div>
+
+    <!-- ── Access denied screen ─────────────────────────────── -->
+    <div id="deniedScreen" hidden>
+      <h2>Access Denied</h2>
+      <p>Your account is not authorized as a VGF admin.</p>
+      <p style="margin-top:0.5rem;font-size:0.8rem;">Contact the site administrator to request access.</p>
+      <button class="btn-signout" id="deniedSignOutBtn" style="margin-top:1.5rem;">Sign Out</button>
+    </div>
+
+    <!-- ── Admin content (shown only when authorized) ────────── -->
+    <div id="adminContent" hidden>
+
+      <div id="adminHeader">
+        <h1>VGF Admin</h1>
+        <div id="adminUserInfo">
+          <span id="adminUserEmail"></span>
+          <button class="btn-signout" id="signOutBtn">Sign Out</button>
+        </div>
+      </div>
+
+      <!-- ── Add a Game ────────────────────────────────────── -->
+      <div class="admin-section">
+        <h2>Add a Game</h2>
+        <form id="gameForm" novalidate>
+          <div class="form-grid">
+            <div class="field">
+              <label for="g-event">Event *</label>
+              <input type="text" id="g-event" placeholder="e.g. VGF 17" required />
+            </div>
+            <div class="field">
+              <label for="g-num">Beat # *</label>
+              <input type="number" id="g-num" placeholder="e.g. 142" min="1" required />
+            </div>
+            <div class="field full-width">
+              <label for="g-game">Game Title *</label>
+              <input type="text" id="g-game" placeholder="e.g. Mega Man 2" required />
+            </div>
+            <div class="field">
+              <label for="g-system">System</label>
+              <input type="text" id="g-system" list="g-system-list" placeholder="e.g. NES" />
+              <datalist id="g-system-list"></datalist>
+            </div>
+            <div class="field">
+              <label for="g-genre">Genre</label>
+              <input type="text" id="g-genre" list="g-genre-list" placeholder="e.g. Platformer" />
+              <datalist id="g-genre-list"></datalist>
+            </div>
+            <div class="field full-width">
+              <label for="g-players">Players</label>
+              <input type="text" id="g-players" placeholder="e.g. Jamal Nickens / Scott Boggs" />
+            </div>
+            <div class="checkbox-row">
+              <input type="checkbox" id="g-hero" />
+              <label for="g-hero">Hero Beat</label>
+            </div>
+            <div class="checkbox-row">
+              <input type="checkbox" id="g-sub" />
+              <label for="g-sub">Is Sub-entry</label>
+            </div>
+          </div>
+          <button type="submit" class="btn-submit" id="gameSubmitBtn">Add Game</button>
+          <div class="form-status" id="gameStatus" aria-live="polite"></div>
+        </form>
+      </div>
+
+      <!-- ── Add a Player Profile ──────────────────────────── -->
+      <div class="admin-section">
+        <h2>Add a Player Profile</h2>
+        <form id="playerForm" novalidate>
+          <div class="form-grid">
+            <div class="field">
+              <label for="p-key">Player Key (unique name) *</label>
+              <input type="text" id="p-key" placeholder="e.g. Jamal Nickens" required />
+            </div>
+            <div class="field">
+              <label for="p-handle">Display Handle *</label>
+              <input type="text" id="p-handle" placeholder="e.g. Zophar321" required />
+            </div>
+            <div class="field">
+              <label for="p-realname">Real Name</label>
+              <input type="text" id="p-realname" placeholder="e.g. Jamal Nickens" />
+            </div>
+            <div class="field">
+              <label for="p-location">Location</label>
+              <input type="text" id="p-location" placeholder="e.g. Cleveland, OH" />
+            </div>
+            <div class="field">
+              <label for="p-debut">Debut Event</label>
+              <input type="text" id="p-debut" placeholder="e.g. VGF 16 (2024)" />
+            </div>
+            <div class="field">
+              <label for="p-best">Best Beat</label>
+              <input type="text" id="p-best" placeholder="e.g. Battletoads" />
+            </div>
+            <div class="field">
+              <label for="p-worst">Worst Beat</label>
+              <input type="text" id="p-worst" placeholder="e.g. Barney's Hide and Seek" />
+            </div>
+            <div class="field">
+              <label for="p-genre">Favorite Genre</label>
+              <input type="text" id="p-genre" placeholder="e.g. Beat 'em up" />
+            </div>
+            <div class="field">
+              <label for="p-events">Events Attended</label>
+              <input type="number" id="p-events" min="0" placeholder="0" />
+            </div>
+            <div class="field">
+              <label for="p-games">Games Beaten</label>
+              <input type="number" id="p-games" min="0" placeholder="0" />
+            </div>
+            <div class="field">
+              <label for="p-mvps">MVP Wins</label>
+              <input type="number" id="p-mvps" min="0" placeholder="0" />
+            </div>
+            <div class="field">
+              <label for="p-photo">Profile Photo</label>
+              <input type="file" id="p-photo" accept="image/*" />
+            </div>
+          </div>
+          <button type="submit" class="btn-submit" id="playerSubmitBtn">Add Player</button>
+          <div class="form-status" id="playerStatus" aria-live="polite"></div>
+        </form>
+      </div>
+
+    </div><!-- /adminContent -->
+  </div><!-- /admin-wrap -->
+
+  <script type="module">
+    import { initializeApp }                                                   from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+    import { getFirestore, collection, doc, getDoc, setDoc, getDocs, addDoc, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+    import { getStorage, ref as storageRef, uploadBytes, getDownloadURL }     from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js';
+
+    // ── TODO: Replace with your Firebase project config ──────────────────────
+    // Firebase console > Project Settings > Your apps > SDK setup and configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyAivaXUB_eCki-I6H2kgYasRNoiVNzEaZw",
+      authDomain: "video-game-festival.firebaseapp.com",
+      projectId: "video-game-festival",
+      storageBucket: "video-game-festival.firebasestorage.app",
+      messagingSenderId: "962832070480",
+      appId: "1:962832070480:web:eaea96982709155f561e55",
+    };
+
+    const app      = initializeApp(firebaseConfig);
+    const auth     = getAuth(app);
+    const db       = getFirestore(app);
+    const storage  = getStorage(app);
+    const provider = new GoogleAuthProvider();
+
+    // ── UI refs ───────────────────────────────────────────────────────────────
+    const authScreen    = document.getElementById('authScreen');
+    const deniedScreen  = document.getElementById('deniedScreen');
+    const adminContent  = document.getElementById('adminContent');
+    const adminUserEmail = document.getElementById('adminUserEmail');
+
+    function show(el) { el.hidden = false; }
+    function hide(el) { el.hidden = true; }
+
+    function setStatus(el, msg, type) {
+      el.textContent = msg;
+      el.className = 'form-status ' + (type || '');
+    }
+
+    // ── Auth state listener ───────────────────────────────────────────────────
+    onAuthStateChanged(auth, async user => {
+      hide(authScreen);
+      hide(deniedScreen);
+      hide(adminContent);
+
+      if (!user) {
+        show(authScreen);
+        return;
+      }
+
+      // Check if this UID has an admin document
+      const adminDoc = await getDoc(doc(db, 'admins', user.uid));
+      if (!adminDoc.exists()) {
+        show(deniedScreen);
+        return;
+      }
+
+      // Authorized admin
+      adminUserEmail.textContent = user.email;
+      show(adminContent);
+      populateDatalistsFromFirestore();
+    });
+
+    // ── Sign in / out ─────────────────────────────────────────────────────────
+    document.getElementById('signInBtn').addEventListener('click', async () => {
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (e) {
+        console.error('Sign-in error', e);
+      }
+    });
+
+    function handleSignOut() { signOut(auth); }
+    document.getElementById('signOutBtn').addEventListener('click', handleSignOut);
+    document.getElementById('deniedSignOutBtn').addEventListener('click', handleSignOut);
+
+    // ── Navbar toggle ─────────────────────────────────────────────────────────
+    const navToggle = document.getElementById('navToggle');
+    const navLinks  = document.getElementById('navLinks');
+    navToggle.addEventListener('click', () => navLinks.classList.toggle('open'));
+    navLinks.querySelectorAll('a').forEach(a =>
+      a.addEventListener('click', () => navLinks.classList.remove('open'))
+    );
+
+    // ── Populate datalists from existing Firestore data ───────────────────────
+    async function populateDatalistsFromFirestore() {
+      try {
+        const snap = await getDocs(query(collection(db, 'games'), orderBy('num')));
+        const games = snap.docs.map(d => d.data());
+
+        const systems = [...new Set(games.map(g => g.system).filter(Boolean))].sort();
+        const genres  = [...new Set(games.map(g => g.genre).filter(Boolean))].sort();
+
+        const sysList = document.getElementById('g-system-list');
+        systems.forEach(s => { const o = document.createElement('option'); o.value = s; sysList.appendChild(o); });
+
+        const genList = document.getElementById('g-genre-list');
+        genres.forEach(g => { const o = document.createElement('option'); o.value = g; genList.appendChild(o); });
+      } catch (e) {
+        console.error('Could not populate datalists', e);
+      }
+    }
+
+    // ── Add Game form ─────────────────────────────────────────────────────────
+    document.getElementById('gameForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const btn    = document.getElementById('gameSubmitBtn');
+      const status = document.getElementById('gameStatus');
+
+      const event   = document.getElementById('g-event').value.trim();
+      const num     = parseInt(document.getElementById('g-num').value, 10);
+      const game    = document.getElementById('g-game').value.trim();
+      const system  = document.getElementById('g-system').value.trim();
+      const genre   = document.getElementById('g-genre').value.trim();
+      const players = document.getElementById('g-players').value.trim();
+      const heroBeat = document.getElementById('g-hero').checked;
+      const isSub    = document.getElementById('g-sub').checked;
+
+      if (!event || !game || !num) {
+        setStatus(status, 'Event, Beat #, and Game Title are required.', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      setStatus(status, 'Saving…', '');
+
+      try {
+        const docId = `${event.replace(/\s+/g, '_')}_${num}`;
+        await setDoc(doc(db, 'games', docId), {
+          event, num, game, system, genre, players,
+          hero_beat: heroBeat,
+          is_sub:    isSub,
+          ref_num:   null,
+          subs:      [],
+        });
+        setStatus(status, `"${game}" added successfully.`, 'success');
+        document.getElementById('gameForm').reset();
+      } catch (err) {
+        console.error(err);
+        setStatus(status, 'Error: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // ── Add Player form ───────────────────────────────────────────────────────
+    document.getElementById('playerForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const btn    = document.getElementById('playerSubmitBtn');
+      const status = document.getElementById('playerStatus');
+
+      const playerKey   = document.getElementById('p-key').value.trim();
+      const handle      = document.getElementById('p-handle').value.trim();
+      const realName    = document.getElementById('p-realname').value.trim();
+      const location    = document.getElementById('p-location').value.trim();
+      const debut       = document.getElementById('p-debut').value.trim();
+      const bestBeat    = document.getElementById('p-best').value.trim();
+      const worstBeat   = document.getElementById('p-worst').value.trim();
+      const favoriteGenre = document.getElementById('p-genre').value.trim();
+      const events      = parseInt(document.getElementById('p-events').value, 10) || 0;
+      const games       = parseInt(document.getElementById('p-games').value, 10) || 0;
+      const mvps        = parseInt(document.getElementById('p-mvps').value, 10)  || 0;
+      const photoFile   = document.getElementById('p-photo').files[0];
+
+      if (!playerKey || !handle) {
+        setStatus(status, 'Player Key and Display Handle are required.', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      setStatus(status, 'Saving…', '');
+
+      try {
+        let photoUrl = '';
+        if (photoFile) {
+          setStatus(status, 'Uploading photo…', '');
+          const ext     = photoFile.name.split('.').pop();
+          const fileRef = storageRef(storage, `profiles/${playerKey.replace(/\s+/g,'_').toLowerCase()}.${ext}`);
+          await uploadBytes(fileRef, photoFile);
+          photoUrl = await getDownloadURL(fileRef);
+        }
+
+        const docId = playerKey.replace(/[^a-zA-Z0-9_-]/g, '_');
+        await setDoc(doc(db, 'players', docId), {
+          playerKey, handle, realName, location, debut,
+          bestBeat, worstBeat, favoriteGenre,
+          events, games, mvps,
+          photoUrl,
+        });
+
+        setStatus(status, `"${handle}" added successfully.`, 'success');
+        document.getElementById('playerForm').reset();
+      } catch (err) {
+        console.error(err);
+        setStatus(status, 'Error: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
