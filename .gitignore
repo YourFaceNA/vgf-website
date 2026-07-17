@@ -1,0 +1,28 @@
+# Firebase service account key — NEVER commit this
+serviceAccountKey.json
+*serviceAccount*.json
+
+# Node (used only for seed scripts)
+node_modules/
+npm-debug.log*
+
+# Firebase CLI
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+vgf_game_log.html
+
+read_excel.ps1
+
+Video Game Festival.xlsx
+
+beats-list - Copy.html
+
+beats-list (original).html
+
+player-profiles (original).html
