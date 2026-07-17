@@ -12,6 +12,16 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Audit log of admin actions — internal only, entries are immutable
+    match /history/{entryId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin()
+          && request.resource.data.action in ['add', 'edit', 'delete']
+          && request.resource.data.entityType in ['game', 'player']
+          && request.resource.data.actorUid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
     // Admins can only read their own role doc; no client can write here
     match /admins/{uid} {
       allow read: if request.auth != null && request.auth.uid == uid;

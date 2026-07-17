@@ -10,7 +10,7 @@
   <style>
     /* ── Admin layout ────────────────────────────────────── */
     .admin-wrap {
-      max-width: 860px;
+      max-width: 1100px;
       margin: 0 auto;
       padding: 2rem 1.5rem 4rem;
     }
@@ -74,7 +74,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 2.5rem;
+      margin-bottom: 2rem;
       flex-wrap: wrap;
       gap: 1rem;
     }
@@ -91,21 +91,220 @@
       gap: 1rem;
     }
 
-    /* Section cards */
-    .admin-section {
+    /* ── Sidebar + tabs layout ─────────────────────────────── */
+    .admin-layout {
+      display: flex;
+      align-items: flex-start;
+      gap: 2rem;
+    }
+    .admin-sidebar {
+      flex: 0 0 190px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      position: sticky;
+      top: 1.5rem;
+    }
+    .admin-tab-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 3px solid transparent;
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.55rem;
+      letter-spacing: 0.05em;
+      text-align: left;
+      padding: 0.9rem 1rem;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+    .admin-tab-btn:hover {
+      color: var(--white);
+      border-color: var(--orange);
+    }
+    .admin-tab-btn.active {
+      color: var(--gold);
+      border-left-color: var(--orange);
+      background: rgba(255,140,0,0.08);
+    }
+    .admin-main {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    .admin-tab-panel.hidden { display: none; }
+
+    .admin-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .admin-panel-header h2 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.7rem;
+      color: var(--gold);
+      letter-spacing: 0.08em;
+    }
+
+    @media (max-width: 700px) {
+      .admin-layout { flex-direction: column; }
+      .admin-sidebar {
+        flex-direction: row;
+        width: 100%;
+        overflow-x: auto;
+        position: static;
+      }
+      .admin-tab-btn { flex: 0 0 auto; white-space: nowrap; }
+    }
+
+    /* ── Tables ────────────────────────────────────────────── */
+    .admin-table-wrap {
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 2rem;
-      margin-bottom: 2rem;
+      overflow-x: auto;
     }
-    .admin-section h2 {
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: 'Exo 2', sans-serif;
+      font-size: 0.85rem;
+    }
+    .admin-table th {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.5rem;
+      letter-spacing: 0.05em;
+      color: var(--gold);
+      text-align: left;
+      padding: 0.9rem 1rem;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .admin-table td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--white);
+      vertical-align: middle;
+    }
+    .admin-table tbody tr:last-child td { border-bottom: none; }
+    .admin-table tbody tr:hover { background: rgba(255,140,0,0.06); }
+    .admin-table-empty {
+      padding: 2rem 1rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .admin-row-actions {
+      display: flex;
+      gap: 0.5rem;
+      white-space: nowrap;
+    }
+    .admin-row-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: 'Exo 2', sans-serif;
+      font-size: 0.75rem;
+      padding: 0.35rem 0.7rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .admin-row-btn.edit { color: var(--orange); }
+    .admin-row-btn.edit:hover { border-color: var(--orange); background: rgba(255,140,0,0.1); }
+    .admin-row-btn.delete { color: var(--red-bright, #ff2244); }
+    .admin-row-btn.delete:hover { border-color: var(--red-bright, #ff2244); background: rgba(255,34,68,0.1); }
+
+    /* ── History list ──────────────────────────────────────── */
+    .history-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .history-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.6rem 1rem;
+      font-family: 'Exo 2', sans-serif;
+      font-size: 0.85rem;
+    }
+    .history-action {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.5rem;
+      letter-spacing: 0.05em;
+      padding: 0.35rem 0.6rem;
+      border-radius: 6px;
+      color: var(--white);
+    }
+    .history-action.add    { background: rgba(57,255,136,0.18); color: var(--green-neon); }
+    .history-action.edit   { background: rgba(255,140,0,0.18); color: var(--orange); }
+    .history-action.delete { background: rgba(255,34,68,0.18); color: var(--red-bright, #ff2244); }
+    .history-entity { color: var(--white); font-weight: 600; }
+    .history-who { color: var(--text-muted); font-size: 0.8rem; }
+    .history-when { color: var(--text-muted); font-size: 0.8rem; margin-left: auto; }
+    .history-detail {
+      flex-basis: 100%;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      border-top: 1px solid var(--border);
+      padding-top: 0.6rem;
+      margin-top: 0.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+    .history-detail .field-name { color: var(--gold); }
+
+    /* ── Section cards (used inside modals) ───────────────── */
+    .admin-modal-box {
+      max-width: 640px;
+      padding: 1.75rem;
+    }
+    .admin-modal-title {
       font-family: 'Press Start 2P', monospace;
       font-size: 0.65rem;
       color: var(--gold);
       margin-bottom: 1.5rem;
       letter-spacing: 0.08em;
+      padding-right: 2rem;
     }
+
+    /* Sub-entries panel (inline inside the Game modal) */
+    .sub-entries-panel {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+    .sub-entries-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.55rem;
+      color: var(--gold);
+      margin-bottom: 0.75rem;
+      letter-spacing: 0.05em;
+    }
+    .sub-entry-row {
+      background: #0d0d1a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem;
+      margin-bottom: 0.6rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+    @media (max-width: 600px) {
+      .sub-entry-row { grid-template-columns: 1fr; }
+    }
+    .sub-entry-remove { grid-column: 1 / -1; justify-self: start; }
 
     /* Form grid */
     .form-grid {
@@ -150,6 +349,10 @@
     .field select:focus,
     .field textarea:focus { border-color: var(--blue-glow); }
     .field input[type="file"] { padding: 0.45rem 0.8rem; cursor: pointer; }
+    .field input:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
 
     .checkbox-row {
       display: flex;
@@ -170,7 +373,7 @@
       cursor: pointer;
     }
 
-    /* Submit button */
+    /* Buttons */
     .btn-submit {
       margin-top: 1.25rem;
       padding: 0.8rem 2rem;
@@ -186,6 +389,12 @@
     }
     .btn-submit:hover:not(:disabled) { opacity: 0.9; box-shadow: 0 4px 20px rgba(255,140,0,0.5); }
     .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-add {
+      margin-top: 0;
+      padding: 0.6rem 1.2rem;
+      font-size: 0.5rem;
+    }
 
     /* Status messages */
     .form-status {
@@ -279,310 +488,193 @@
         </div>
       </div>
 
-      <!-- ── Add a Game ────────────────────────────────────── -->
-      <div class="admin-section">
-        <h2>Add a Game</h2>
-        <form id="gameForm" novalidate>
-          <div class="form-grid">
-            <div class="field">
-              <label for="g-event">Event *</label>
-              <input type="text" id="g-event" placeholder="e.g. VGF 17" required />
-            </div>
-            <div class="field">
-              <label for="g-num">Beat # *</label>
-              <input type="number" id="g-num" placeholder="e.g. 142" min="1" required />
-            </div>
-            <div class="field full-width">
-              <label for="g-game">Game Title *</label>
-              <input type="text" id="g-game" placeholder="e.g. Mega Man 2" required />
-            </div>
-            <div class="field">
-              <label for="g-system">System</label>
-              <input type="text" id="g-system" list="g-system-list" placeholder="e.g. NES" />
-              <datalist id="g-system-list"></datalist>
-            </div>
-            <div class="field">
-              <label for="g-genre">Genre</label>
-              <input type="text" id="g-genre" list="g-genre-list" placeholder="e.g. Platformer" />
-              <datalist id="g-genre-list"></datalist>
-            </div>
-            <div class="field full-width">
-              <label for="g-players">Players</label>
-              <input type="text" id="g-players" placeholder="e.g. Jamal Nickens / Scott Boggs" />
-            </div>
-            <div class="checkbox-row">
-              <input type="checkbox" id="g-hero" />
-              <label for="g-hero">Hero Beat</label>
-            </div>
-            <div class="checkbox-row">
-              <input type="checkbox" id="g-sub" />
-              <label for="g-sub">Is Sub-entry</label>
-            </div>
-          </div>
-          <button type="submit" class="btn-submit" id="gameSubmitBtn">Add Game</button>
-          <div class="form-status" id="gameStatus" aria-live="polite"></div>
-        </form>
-      </div>
+      <div class="admin-layout">
+        <nav class="admin-sidebar">
+          <button class="admin-tab-btn active" data-tab="players">Players</button>
+          <button class="admin-tab-btn" data-tab="games">Games</button>
+          <button class="admin-tab-btn" data-tab="history">History</button>
+        </nav>
 
-      <!-- ── Add a Player Profile ──────────────────────────── -->
-      <div class="admin-section">
-        <h2>Add a Player Profile</h2>
-        <form id="playerForm" novalidate>
-          <div class="form-grid">
-            <div class="field">
-              <label for="p-key">Player Key (unique name) *</label>
-              <input type="text" id="p-key" placeholder="e.g. Jamal Nickens" required />
+        <div class="admin-main">
+
+          <!-- ── Players tab ──────────────────────────────── -->
+          <section class="admin-tab-panel" id="tab-players">
+            <div class="admin-panel-header">
+              <h2>Players</h2>
+              <button class="btn-submit btn-add" id="openAddPlayerBtn">+ Add Player</button>
             </div>
-            <div class="field">
-              <label for="p-handle">Display Handle *</label>
-              <input type="text" id="p-handle" placeholder="e.g. Zophar321" required />
+            <div class="admin-table-wrap">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Handle</th>
+                    <th>Real Name</th>
+                    <th>Location</th>
+                    <th>Events</th>
+                    <th>MVPs</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="playersTableBody"></tbody>
+              </table>
             </div>
-            <div class="field">
-              <label for="p-realname">Real Name</label>
-              <input type="text" id="p-realname" placeholder="e.g. Jamal Nickens" />
+          </section>
+
+          <!-- ── Games tab ────────────────────────────────── -->
+          <section class="admin-tab-panel hidden" id="tab-games">
+            <div class="admin-panel-header">
+              <h2>Games</h2>
+              <button class="btn-submit btn-add" id="openAddGameBtn">+ Add Game</button>
             </div>
-            <div class="field">
-              <label for="p-location">Location</label>
-              <input type="text" id="p-location" placeholder="e.g. Cleveland, OH" />
+            <div class="admin-table-wrap">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Event</th>
+                    <th>#</th>
+                    <th>Game</th>
+                    <th>System</th>
+                    <th>Genre</th>
+                    <th>Players</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="gamesTableBody"></tbody>
+              </table>
             </div>
-            <div class="field">
-              <label for="p-debut">Debut Event</label>
-              <input type="text" id="p-debut" placeholder="e.g. VGF 16 (2024)" />
+          </section>
+
+          <!-- ── History tab ──────────────────────────────── -->
+          <section class="admin-tab-panel hidden" id="tab-history">
+            <div class="admin-panel-header">
+              <h2>History</h2>
             </div>
-            <div class="field">
-              <label for="p-best">Best Beat</label>
-              <input type="text" id="p-best" placeholder="e.g. Battletoads" />
-            </div>
-            <div class="field">
-              <label for="p-worst">Worst Beat</label>
-              <input type="text" id="p-worst" placeholder="e.g. Barney's Hide and Seek" />
-            </div>
-            <div class="field">
-              <label for="p-genre">Favorite Genre</label>
-              <input type="text" id="p-genre" placeholder="e.g. Beat 'em up" />
-            </div>
-            <div class="field">
-              <label for="p-events">Events Attended</label>
-              <input type="number" id="p-events" min="0" placeholder="0" />
-            </div>
-            <div class="field">
-              <label for="p-games">Games Beaten</label>
-              <input type="number" id="p-games" min="0" placeholder="0" />
-            </div>
-            <div class="field">
-              <label for="p-mvps">MVP Wins</label>
-              <input type="number" id="p-mvps" min="0" placeholder="0" />
-            </div>
-            <div class="field">
-              <label for="p-photo">Profile Photo</label>
-              <input type="file" id="p-photo" accept="image/*" />
-            </div>
-          </div>
-          <button type="submit" class="btn-submit" id="playerSubmitBtn">Add Player</button>
-          <div class="form-status" id="playerStatus" aria-live="polite"></div>
-        </form>
+            <ul class="history-list" id="historyList"></ul>
+          </section>
+
+        </div>
       </div>
 
     </div><!-- /adminContent -->
   </div><!-- /admin-wrap -->
 
-  <script type="module">
-    import { initializeApp }                                                   from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
-    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-    import { getFirestore, collection, doc, getDoc, setDoc, getDocs, addDoc, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
-    import { getStorage, ref as storageRef, uploadBytes, getDownloadURL }     from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js';
+  <!-- ── Add/Edit Game modal ──────────────────────────────── -->
+  <div class="player-modal-overlay" id="gameModal" hidden aria-modal="true" role="dialog" aria-label="Game Form">
+    <div class="player-modal-box admin-modal-box">
+      <button class="player-modal-close" id="gameModalClose" aria-label="Close">&times;</button>
+      <h2 class="admin-modal-title" id="gameModalTitle">Add a Game</h2>
+      <form id="gameForm" novalidate>
+        <div class="form-grid">
+          <div class="field">
+            <label for="g-event">Event *</label>
+            <input type="text" id="g-event" placeholder="e.g. VGF 17" required />
+          </div>
+          <div class="field">
+            <label for="g-num">Beat # *</label>
+            <input type="number" id="g-num" placeholder="e.g. 142" min="1" required />
+          </div>
+          <div class="field full-width">
+            <label for="g-game">Game Title *</label>
+            <input type="text" id="g-game" placeholder="e.g. Mega Man 2" required />
+          </div>
+          <div class="field">
+            <label for="g-system">System</label>
+            <input type="text" id="g-system" list="g-system-list" placeholder="e.g. NES" />
+            <datalist id="g-system-list"></datalist>
+          </div>
+          <div class="field">
+            <label for="g-genre">Genre</label>
+            <input type="text" id="g-genre" list="g-genre-list" placeholder="e.g. Platformer" />
+            <datalist id="g-genre-list"></datalist>
+          </div>
+          <div class="field full-width">
+            <label for="g-players">Players</label>
+            <input type="text" id="g-players" placeholder="e.g. Jamal Nickens / Scott Boggs" />
+          </div>
+          <div class="checkbox-row">
+            <input type="checkbox" id="g-hero" />
+            <label for="g-hero">Hero Beat</label>
+          </div>
+          <div class="checkbox-row full-width">
+            <input type="checkbox" id="g-has-subs" />
+            <label for="g-has-subs">Has Sub Entries</label>
+          </div>
+        </div>
 
-    // ── TODO: Replace with your Firebase project config ──────────────────────
-    // Firebase console > Project Settings > Your apps > SDK setup and configuration
-    const firebaseConfig = {
-      apiKey: "AIzaSyAivaXUB_eCki-I6H2kgYasRNoiVNzEaZw",
-      authDomain: "video-game-festival.firebaseapp.com",
-      projectId: "video-game-festival",
-      storageBucket: "video-game-festival.firebasestorage.app",
-      messagingSenderId: "962832070480",
-      appId: "1:962832070480:web:eaea96982709155f561e55",
-    };
+        <div class="sub-entries-panel" id="subEntriesPanel" hidden>
+          <h3 class="sub-entries-title">Sub Entries</h3>
+          <div id="subEntriesList"></div>
+          <button type="button" class="admin-row-btn edit" id="addSubEntryBtn">+ Add Sub Row</button>
+        </div>
 
-    const app      = initializeApp(firebaseConfig);
-    const auth     = getAuth(app);
-    const db       = getFirestore(app);
-    const storage  = getStorage(app);
-    const provider = new GoogleAuthProvider();
+        <button type="submit" class="btn-submit" id="gameSubmitBtn">Add Game</button>
+        <div class="form-status" id="gameStatus" aria-live="polite"></div>
+      </form>
+    </div>
+  </div>
 
-    // ── UI refs ───────────────────────────────────────────────────────────────
-    const authScreen    = document.getElementById('authScreen');
-    const deniedScreen  = document.getElementById('deniedScreen');
-    const adminContent  = document.getElementById('adminContent');
-    const adminUserEmail = document.getElementById('adminUserEmail');
+  <!-- ── Add/Edit Player modal ────────────────────────────── -->
+  <div class="player-modal-overlay" id="playerModal" hidden aria-modal="true" role="dialog" aria-label="Player Form">
+    <div class="player-modal-box admin-modal-box">
+      <button class="player-modal-close" id="playerModalClose" aria-label="Close">&times;</button>
+      <h2 class="admin-modal-title" id="playerModalTitle">Add a Player Profile</h2>
+      <form id="playerForm" novalidate>
+        <div class="form-grid">
+          <div class="field">
+            <label for="p-key">Player Key (unique name) *</label>
+            <input type="text" id="p-key" placeholder="e.g. Jamal Nickens" required />
+          </div>
+          <div class="field">
+            <label for="p-handle">Display Handle *</label>
+            <input type="text" id="p-handle" placeholder="e.g. Zophar321" required />
+          </div>
+          <div class="field">
+            <label for="p-realname">Real Name</label>
+            <input type="text" id="p-realname" placeholder="e.g. Jamal Nickens" />
+          </div>
+          <div class="field">
+            <label for="p-location">Location</label>
+            <input type="text" id="p-location" placeholder="e.g. Cleveland, OH" />
+          </div>
+          <div class="field">
+            <label for="p-debut">Debut Event</label>
+            <input type="text" id="p-debut" placeholder="e.g. VGF 16 (2024)" />
+          </div>
+          <div class="field">
+            <label for="p-best">Best Beat</label>
+            <input type="text" id="p-best" placeholder="e.g. Battletoads" />
+          </div>
+          <div class="field">
+            <label for="p-worst">Worst Beat</label>
+            <input type="text" id="p-worst" placeholder="e.g. Barney's Hide and Seek" />
+          </div>
+          <div class="field">
+            <label for="p-genre">Favorite Genre</label>
+            <input type="text" id="p-genre" placeholder="e.g. Beat 'em up" />
+          </div>
+          <div class="field">
+            <label for="p-events">Events Attended</label>
+            <input type="number" id="p-events" min="0" placeholder="0" />
+          </div>
+          <div class="field">
+            <label for="p-games">Games Beaten</label>
+            <input type="number" id="p-games" min="0" placeholder="0" />
+          </div>
+          <div class="field">
+            <label for="p-mvps">MVP Wins</label>
+            <input type="number" id="p-mvps" min="0" placeholder="0" />
+          </div>
+          <div class="field">
+            <label for="p-photo">Profile Photo</label>
+            <input type="file" id="p-photo" accept="image/*" />
+          </div>
+        </div>
+        <button type="submit" class="btn-submit" id="playerSubmitBtn">Add Player</button>
+        <div class="form-status" id="playerStatus" aria-live="polite"></div>
+      </form>
+    </div>
+  </div>
 
-    function show(el) { el.hidden = false; }
-    function hide(el) { el.hidden = true; }
-
-    function setStatus(el, msg, type) {
-      el.textContent = msg;
-      el.className = 'form-status ' + (type || '');
-    }
-
-    // ── Auth state listener ───────────────────────────────────────────────────
-    onAuthStateChanged(auth, async user => {
-      hide(authScreen);
-      hide(deniedScreen);
-      hide(adminContent);
-
-      if (!user) {
-        show(authScreen);
-        return;
-      }
-
-      // Check if this UID has an admin document
-      const adminDoc = await getDoc(doc(db, 'admins', user.uid));
-      if (!adminDoc.exists()) {
-        show(deniedScreen);
-        return;
-      }
-
-      // Authorized admin
-      adminUserEmail.textContent = user.email;
-      show(adminContent);
-      populateDatalistsFromFirestore();
-    });
-
-    // ── Sign in / out ─────────────────────────────────────────────────────────
-    document.getElementById('signInBtn').addEventListener('click', async () => {
-      try {
-        await signInWithPopup(auth, provider);
-      } catch (e) {
-        console.error('Sign-in error', e);
-      }
-    });
-
-    function handleSignOut() { signOut(auth); }
-    document.getElementById('signOutBtn').addEventListener('click', handleSignOut);
-    document.getElementById('deniedSignOutBtn').addEventListener('click', handleSignOut);
-
-    // ── Navbar toggle ─────────────────────────────────────────────────────────
-    const navToggle = document.getElementById('navToggle');
-    const navLinks  = document.getElementById('navLinks');
-    navToggle.addEventListener('click', () => navLinks.classList.toggle('open'));
-    navLinks.querySelectorAll('a').forEach(a =>
-      a.addEventListener('click', () => navLinks.classList.remove('open'))
-    );
-
-    // ── Populate datalists from existing Firestore data ───────────────────────
-    async function populateDatalistsFromFirestore() {
-      try {
-        const snap = await getDocs(query(collection(db, 'games'), orderBy('num')));
-        const games = snap.docs.map(d => d.data());
-
-        const systems = [...new Set(games.map(g => g.system).filter(Boolean))].sort();
-        const genres  = [...new Set(games.map(g => g.genre).filter(Boolean))].sort();
-
-        const sysList = document.getElementById('g-system-list');
-        systems.forEach(s => { const o = document.createElement('option'); o.value = s; sysList.appendChild(o); });
-
-        const genList = document.getElementById('g-genre-list');
-        genres.forEach(g => { const o = document.createElement('option'); o.value = g; genList.appendChild(o); });
-      } catch (e) {
-        console.error('Could not populate datalists', e);
-      }
-    }
-
-    // ── Add Game form ─────────────────────────────────────────────────────────
-    document.getElementById('gameForm').addEventListener('submit', async e => {
-      e.preventDefault();
-      const btn    = document.getElementById('gameSubmitBtn');
-      const status = document.getElementById('gameStatus');
-
-      const event   = document.getElementById('g-event').value.trim();
-      const num     = parseInt(document.getElementById('g-num').value, 10);
-      const game    = document.getElementById('g-game').value.trim();
-      const system  = document.getElementById('g-system').value.trim();
-      const genre   = document.getElementById('g-genre').value.trim();
-      const players = document.getElementById('g-players').value.trim();
-      const heroBeat = document.getElementById('g-hero').checked;
-      const isSub    = document.getElementById('g-sub').checked;
-
-      if (!event || !game || !num) {
-        setStatus(status, 'Event, Beat #, and Game Title are required.', 'error');
-        return;
-      }
-
-      btn.disabled = true;
-      setStatus(status, 'Saving…', '');
-
-      try {
-        const docId = `${event.replace(/\s+/g, '_')}_${num}`;
-        await setDoc(doc(db, 'games', docId), {
-          event, num, game, system, genre, players,
-          hero_beat: heroBeat,
-          is_sub:    isSub,
-          ref_num:   null,
-          subs:      [],
-        });
-        setStatus(status, `"${game}" added successfully.`, 'success');
-        document.getElementById('gameForm').reset();
-      } catch (err) {
-        console.error(err);
-        setStatus(status, 'Error: ' + err.message, 'error');
-      } finally {
-        btn.disabled = false;
-      }
-    });
-
-    // ── Add Player form ───────────────────────────────────────────────────────
-    document.getElementById('playerForm').addEventListener('submit', async e => {
-      e.preventDefault();
-      const btn    = document.getElementById('playerSubmitBtn');
-      const status = document.getElementById('playerStatus');
-
-      const playerKey   = document.getElementById('p-key').value.trim();
-      const handle      = document.getElementById('p-handle').value.trim();
-      const realName    = document.getElementById('p-realname').value.trim();
-      const location    = document.getElementById('p-location').value.trim();
-      const debut       = document.getElementById('p-debut').value.trim();
-      const bestBeat    = document.getElementById('p-best').value.trim();
-      const worstBeat   = document.getElementById('p-worst').value.trim();
-      const favoriteGenre = document.getElementById('p-genre').value.trim();
-      const events      = parseInt(document.getElementById('p-events').value, 10) || 0;
-      const games       = parseInt(document.getElementById('p-games').value, 10) || 0;
-      const mvps        = parseInt(document.getElementById('p-mvps').value, 10)  || 0;
-      const photoFile   = document.getElementById('p-photo').files[0];
-
-      if (!playerKey || !handle) {
-        setStatus(status, 'Player Key and Display Handle are required.', 'error');
-        return;
-      }
-
-      btn.disabled = true;
-      setStatus(status, 'Saving…', '');
-
-      try {
-        let photoUrl = '';
-        if (photoFile) {
-          setStatus(status, 'Uploading photo…', '');
-          const ext     = photoFile.name.split('.').pop();
-          const fileRef = storageRef(storage, `profiles/${playerKey.replace(/\s+/g,'_').toLowerCase()}.${ext}`);
-          await uploadBytes(fileRef, photoFile);
-          photoUrl = await getDownloadURL(fileRef);
-        }
-
-        const docId = playerKey.replace(/[^a-zA-Z0-9_-]/g, '_');
-        await setDoc(doc(db, 'players', docId), {
-          playerKey, handle, realName, location, debut,
-          bestBeat, worstBeat, favoriteGenre,
-          events, games, mvps,
-          photoUrl,
-        });
-
-        setStatus(status, `"${handle}" added successfully.`, 'success');
-        document.getElementById('playerForm').reset();
-      } catch (err) {
-        console.error(err);
-        setStatus(status, 'Error: ' + err.message, 'error');
-      } finally {
-        btn.disabled = false;
-      }
-    });
-  </script>
+  <script type="module" src="js/admin.js"></script>
 </body>
 </html>
