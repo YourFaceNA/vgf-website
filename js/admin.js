@@ -2,7 +2,7 @@ import { initializeApp }                                                   from 
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 import {
   getFirestore, collection, doc, getDoc, setDoc, getDocs, addDoc, deleteDoc,
-  query, orderBy, limit, serverTimestamp,
+  query, orderBy, limit, serverTimestamp, writeBatch,
 }                                                                            from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL }     from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js';
 
@@ -46,11 +46,11 @@ function escHtml(str) {
 const PLAYER_SEPARATOR_REGEX = /\s*\/\s*|\s*&\s*|\s*,\s*/;
 
 /**
- * Turns a chips-container + text-input pair into a tag/chip input for player
- * names, backed by a plain input/hidden input whose `.value` is kept as the
- * "/"-joined string the rest of the codebase (and beats-list.html) expects.
+ * Turns a chips-container + text-input pair into a generic tag/chip input,
+ * backed by a plain input/hidden input whose `.value` is kept as a
+ * "/"-joined string. Used for both Players and Genre (multi-value) fields.
  */
-function createPlayerChipInput({ chipsEl, textInputEl, valueInputEl }) {
+function createChipInput({ chipsEl, textInputEl, valueInputEl, separator = PLAYER_SEPARATOR_REGEX }) {
   let chips = [];
 
   function sync() {
@@ -93,7 +93,7 @@ function createPlayerChipInput({ chipsEl, textInputEl, valueInputEl }) {
 
   function setFromString(str) {
     chips = (str || '')
-      .split(PLAYER_SEPARATOR_REGEX)
+      .split(separator)
       .map(s => s.trim())
       .filter(Boolean);
     render();
@@ -316,11 +316,12 @@ function diffFields(before, after) {
 // ── Modal open/close helpers ────────────────────────────────────────────────
 const gameModal   = document.getElementById('gameModal');
 const playerModal = document.getElementById('playerModal');
+const genreModal  = document.getElementById('genreModal');
 
 function openModal(overlay) { overlay.hidden = false; }
 function closeModal(overlay) { overlay.hidden = true; }
 
-[gameModal, playerModal].forEach(overlay => {
+[gameModal, playerModal, genreModal].forEach(overlay => {
   overlay.addEventListener('click', e => {
     if (e.target === e.currentTarget) closeModal(overlay);
   });
@@ -329,10 +330,12 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     closeModal(gameModal);
     closeModal(playerModal);
+    closeModal(genreModal);
   }
 });
 document.getElementById('gameModalClose').addEventListener('click', () => closeModal(gameModal));
 document.getElementById('playerModalClose').addEventListener('click', () => closeModal(playerModal));
+document.getElementById('genreModalClose').addEventListener('click', () => closeModal(genreModal));
 
 // ══════════════════════════════════════════════════════════════════════════
 // GAMES
@@ -352,13 +355,18 @@ const hasSubsToggle   = document.getElementById('g-has-subs');
 const subEntriesPanel = document.getElementById('subEntriesPanel');
 const subEntriesList  = document.getElementById('subEntriesList');
 
-const gPlayersChip = createPlayerChipInput({
+const gPlayersChip = createChipInput({
   chipsEl: document.getElementById('g-players-chips'),
   textInputEl: document.getElementById('g-players-input'),
   valueInputEl: document.getElementById('g-players'),
 });
+const gGenreChip = createChipInput({
+  chipsEl: document.getElementById('g-genre-chips'),
+  textInputEl: document.getElementById('g-genre-input'),
+  valueInputEl: document.getElementById('g-genre'),
+});
 createAutocomplete(document.getElementById('g-system'), () => knownSystems);
-createAutocomplete(document.getElementById('g-genre'), () => knownGenres);
+createAutocomplete(document.getElementById('g-genre-input'), () => knownGenres);
 createAutocomplete(document.getElementById('g-players-input'), () => knownPlayerHandles);
 
 hasSubsToggle.addEventListener('change', () => {
@@ -397,40 +405,40 @@ function renderSubEntryRow(sub, i) {
     return wrap;
   };
 
-  const mkPlayersField = (labelText, cls, value) => {
+  const mkChipField = (labelText, cls, value, getOptions, placeholder) => {
     const wrap = document.createElement('div');
     wrap.className = 'field';
     const label = document.createElement('label');
     label.textContent = labelText;
     const chipWrap = document.createElement('div');
-    chipWrap.className = 'chip-input';
+    chipWrap.className = cls === 'sub-genre' ? 'chip-input chip-input--genre' : 'chip-input';
     const chipsEl = document.createElement('div');
     chipsEl.className = 'chip-input-chips';
     const textInput = document.createElement('input');
     textInput.type = 'text';
     textInput.setAttribute('autocomplete', 'off');
-    textInput.placeholder = 'Type a name and press Enter…';
+    textInput.placeholder = placeholder;
     chipWrap.appendChild(chipsEl);
     const acWrap = document.createElement('div');
     acWrap.className = 'autocomplete-wrap';
     acWrap.appendChild(textInput);
     chipWrap.appendChild(acWrap);
-    createAutocomplete(textInput, () => knownPlayerHandles);
+    createAutocomplete(textInput, getOptions);
     const hiddenInput = document.createElement('input');
     hiddenInput.type = 'hidden';
     hiddenInput.className = cls;
     wrap.appendChild(label);
     wrap.appendChild(chipWrap);
     wrap.appendChild(hiddenInput);
-    const chipApi = createPlayerChipInput({ chipsEl, textInputEl: textInput, valueInputEl: hiddenInput });
+    const chipApi = createChipInput({ chipsEl, textInputEl: textInput, valueInputEl: hiddenInput });
     chipApi.setFromString(value || '');
     return wrap;
   };
 
   div.appendChild(mkField('Game Title', 'sub-game', sub.game));
   div.appendChild(mkField('System', 'sub-system', sub.system, () => knownSystems));
-  div.appendChild(mkField('Genre', 'sub-genre', sub.genre, () => knownGenres));
-  div.appendChild(mkPlayersField('Players', 'sub-players', sub.players));
+  div.appendChild(mkChipField('Genre', 'sub-genre', sub.genre, () => knownGenres, 'Type a genre and press Enter…'));
+  div.appendChild(mkChipField('Players', 'sub-players', sub.players, () => knownPlayerHandles, 'Type a name and press Enter…'));
 
   const heroRow = document.createElement('div');
   heroRow.className = 'checkbox-row';
@@ -478,6 +486,7 @@ function openAddGame() {
   gNumInput.disabled = false;
   gNumInput.value = nextGameNum();
   gPlayersChip.setFromString('');
+  gGenreChip.setFromString('');
   currentSubs = [];
   hasSubsToggle.checked = false;
   subEntriesPanel.hidden = true;
@@ -496,7 +505,7 @@ function openEditGame(id) {
   gNumInput.value = data.num != null ? data.num : '';
   document.getElementById('g-game').value = data.game || '';
   document.getElementById('g-system').value = data.system || '';
-  document.getElementById('g-genre').value = data.genre || '';
+  gGenreChip.setFromString(data.genre || '');
   gPlayersChip.setFromString(data.players || '');
   document.getElementById('g-hero').checked = !!data.hero_beat;
   currentSubs = (data.subs || []).map(s => ({ ...s }));
@@ -691,6 +700,161 @@ gameForm.addEventListener('submit', async e => {
 });
 
 // ══════════════════════════════════════════════════════════════════════════
+// MANAGE GENRES
+// ══════════════════════════════════════════════════════════════════════════
+
+const genreListView       = document.getElementById('genreListView');
+const genreRenameView     = document.getElementById('genreRenameView');
+const genreSearchInput    = document.getElementById('genreSearchInput');
+const genreListResults    = document.getElementById('genreListResults');
+const genreRenameFromLabel = document.getElementById('genreRenameFromLabel');
+const genreRenameToInput  = document.getElementById('genreRenameToInput');
+const genreAffectedList   = document.getElementById('genreAffectedList');
+const genreRenameStatus   = document.getElementById('genreRenameStatus');
+const genreRenameConfirmBtn = document.getElementById('genreRenameConfirmBtn');
+
+let genreRenameTarget = null; // { genre, count, gameIds } for the genre currently being renamed
+
+function getGenreUsage() {
+  const usage = new Map(); // genreValue -> { count, gameIds: Set<string> }
+  function record(genreStr, docId) {
+    (genreStr || '').split(PLAYER_SEPARATOR_REGEX).map(g => g.trim()).filter(Boolean).forEach(g => {
+      if (!usage.has(g)) usage.set(g, { count: 0, gameIds: new Set() });
+      const entry = usage.get(g);
+      entry.count++;
+      entry.gameIds.add(docId);
+    });
+  }
+  gamesCache.forEach((data, id) => {
+    record(data.genre, id);
+    (data.subs || []).forEach(s => record(s.genre, id));
+  });
+  return usage;
+}
+
+function renderGenreList(term) {
+  const usage = getGenreUsage();
+  const entries = [...usage.entries()]
+    .filter(([g]) => !term || g.toLowerCase().includes(term.toLowerCase()))
+    .sort((a, b) => a[0].localeCompare(b[0]));
+
+  genreListResults.innerHTML = '';
+  if (entries.length === 0) {
+    genreListResults.innerHTML = '<li class="admin-table-empty">No matching genres found.</li>';
+    return;
+  }
+  entries.forEach(([genre, { count, gameIds }]) => {
+    const li = document.createElement('li');
+    li.textContent = `${genre} (${count} beat${count === 1 ? '' : 's'} in ${gameIds.size} game${gameIds.size === 1 ? '' : 's'})`;
+    li.addEventListener('click', () => openGenreRenameView(genre, { count, gameIds }));
+    genreListResults.appendChild(li);
+  });
+}
+
+function openGenreRenameView(genre, { count, gameIds }) {
+  genreRenameTarget = { genre, count, gameIds };
+  genreRenameFromLabel.textContent = `"${genre}" — used by ${gameIds.size} game${gameIds.size === 1 ? '' : 's'}`;
+
+  const names = [...gameIds].map(id => gamesCache.get(id)?.game).filter(Boolean);
+  const shown = names.slice(0, 10);
+  genreAffectedList.innerHTML = shown.map(n => `<div>${escHtml(n)}</div>`).join('')
+    + (names.length > 10 ? `<div>…and ${names.length - 10} more</div>` : '');
+
+  genreRenameToInput.value = genre;
+  setStatus(genreRenameStatus, '', '');
+  genreListView.hidden = true;
+  genreRenameView.hidden = false;
+  genreRenameToInput.focus();
+  genreRenameToInput.select();
+}
+
+async function applyGenreRename(fromGenre, toGenre) {
+  const usage = getGenreUsage();
+  const entry = usage.get(fromGenre);
+  if (!entry) return;
+
+  const renameToken = (str) => (str || '')
+    .split(PLAYER_SEPARATOR_REGEX).map(g => g.trim()).filter(Boolean)
+    .map(g => g === fromGenre ? toGenre : g)
+    .filter((g, i, arr) => arr.indexOf(g) === i)
+    .join(' / ');
+
+  const batch = writeBatch(db);
+  const historyEntries = [];
+
+  entry.gameIds.forEach(docId => {
+    const before = gamesCache.get(docId);
+    if (!before) return;
+    const after = {
+      ...before,
+      genre: renameToken(before.genre),
+      subs: (before.subs || []).map(s => ({ ...s, genre: renameToken(s.genre) })),
+    };
+    batch.set(doc(db, 'games', docId), after, { merge: true });
+    historyEntries.push({ docId, gameName: before.game, before, after });
+  });
+
+  await batch.commit();
+  for (const h of historyEntries) {
+    await logHistory('edit', 'game', h.docId, h.gameName, diffFields(h.before, h.after));
+  }
+  await loadGamesTable();
+  populateDatalistsFromFirestore();
+}
+
+document.getElementById('manageGenresBtn').addEventListener('click', () => {
+  genreListView.hidden = false;
+  genreRenameView.hidden = true;
+  genreSearchInput.value = '';
+  renderGenreList('');
+  openModal(genreModal);
+});
+
+genreSearchInput.addEventListener('input', () => renderGenreList(genreSearchInput.value.trim()));
+
+document.getElementById('genreRenameBackBtn').addEventListener('click', () => {
+  genreRenameView.hidden = true;
+  genreListView.hidden = false;
+  renderGenreList(genreSearchInput.value.trim());
+});
+
+genreRenameConfirmBtn.addEventListener('click', async () => {
+  if (!genreRenameTarget) return;
+  const fromGenre = genreRenameTarget.genre;
+  const toGenre = genreRenameToInput.value.trim();
+
+  if (!toGenre) {
+    setStatus(genreRenameStatus, 'Enter a name to rename this genre to.', 'error');
+    return;
+  }
+  if (toGenre === fromGenre) {
+    setStatus(genreRenameStatus, 'That is already the current name.', 'error');
+    return;
+  }
+
+  const count = genreRenameTarget.gameIds.size;
+  if (!confirm(`Rename "${fromGenre}" to "${toGenre}" across ${count} game${count === 1 ? '' : 's'}? This cannot be undone.`)) {
+    return;
+  }
+
+  genreRenameConfirmBtn.disabled = true;
+  setStatus(genreRenameStatus, 'Renaming…', '');
+  try {
+    await applyGenreRename(fromGenre, toGenre);
+    setStatus(genreRenameStatus, `Renamed "${fromGenre}" to "${toGenre}" across ${count} game${count === 1 ? '' : 's'}.`, 'success');
+    genreRenameTarget = null;
+    genreRenameView.hidden = true;
+    genreListView.hidden = false;
+    renderGenreList(genreSearchInput.value.trim());
+  } catch (err) {
+    console.error(err);
+    setStatus(genreRenameStatus, 'Error: ' + err.message, 'error');
+  } finally {
+    genreRenameConfirmBtn.disabled = false;
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════
 // PLAYERS
 // ══════════════════════════════════════════════════════════════════════════
 
@@ -714,8 +878,11 @@ function fillPlayerForm(data) {
   document.getElementById('p-realname').value = data.realName || '';
   document.getElementById('p-location').value = data.location || '';
   document.getElementById('p-debut').value = data.debut || '';
-  document.getElementById('p-best').value = data.bestBeat || '';
-  document.getElementById('p-worst').value = data.worstBeat || '';
+
+  const { directRecords } = computePlayerStatsFromGames(data.playerKey || '');
+  populateBeatSelect('p-best', directRecords, data.bestBeat);
+  populateBeatSelect('p-worst', directRecords, data.worstBeat);
+
   document.getElementById('p-genre').value = data.favoriteGenre || '';
   document.getElementById('p-events').value = data.events != null ? data.events : '';
   document.getElementById('p-games').value = data.games != null ? data.games : '';
@@ -734,6 +901,8 @@ function openAddPlayer() {
   playerForm.reset();
   setStatus(playerStatus, '', '');
   pKeyInput.disabled = false;
+  populateBeatSelect('p-best', []);
+  populateBeatSelect('p-worst', []);
   showPlayerFormView();
   searchPlayerDataBtn.hidden = false;
   playerModalTitle.textContent = 'Add a Player Profile';
@@ -759,6 +928,7 @@ document.getElementById('openAddPlayerBtn').addEventListener('click', openAddPla
 
 // ── Search Player Data: pull stats from the beats list (games collection) ──
 function playerInGame(playersStr, playerKey) {
+  if (!playerKey) return false;
   return (playersStr || '').split(PLAYER_SEPARATOR_REGEX).map(p => p.trim()).some(p => p === playerKey);
 }
 
@@ -813,6 +983,30 @@ function renderPlayerSearchResults(term) {
   });
 }
 
+function populateBeatSelect(selectId, directRecords, selectedValue) {
+  const select = document.getElementById(selectId);
+  select.innerHTML = '<option value="">— Select a beat —</option>';
+  const seen = new Set();
+  directRecords.forEach(r => {
+    if (!r.game || seen.has(r.game)) return;
+    seen.add(r.game);
+    const opt = document.createElement('option');
+    opt.value = r.game;
+    opt.textContent = r.event ? `${r.game} (${r.event})` : r.game;
+    select.appendChild(opt);
+  });
+
+  if (selectedValue) {
+    if (!seen.has(selectedValue)) {
+      const opt = document.createElement('option');
+      opt.value = selectedValue;
+      opt.textContent = `${selectedValue} (not in matched beats)`;
+      select.appendChild(opt);
+    }
+    select.value = selectedValue;
+  }
+}
+
 function selectSearchedPlayer(name) {
   const stats = computePlayerStatsFromGames(name);
   pendingPulledPlayer = { name, stats };
@@ -837,8 +1031,8 @@ function selectSearchedPlayer(name) {
   document.getElementById('pc-realname').value = '';
   document.getElementById('pc-location').value = '';
   document.getElementById('pc-debut').value = '';
-  document.getElementById('pc-best').value = '';
-  document.getElementById('pc-worst').value = '';
+  populateBeatSelect('pc-best', stats.directRecords);
+  populateBeatSelect('pc-worst', stats.directRecords);
   document.getElementById('pc-mvps').value = '';
 
   playerSearchView.hidden = true;
@@ -874,8 +1068,8 @@ document.getElementById('playerConfirmUseBtn').addEventListener('click', () => {
   document.getElementById('p-realname').value = document.getElementById('pc-realname').value.trim();
   document.getElementById('p-location').value = document.getElementById('pc-location').value.trim();
   document.getElementById('p-debut').value = document.getElementById('pc-debut').value.trim();
-  document.getElementById('p-best').value = document.getElementById('pc-best').value.trim();
-  document.getElementById('p-worst').value = document.getElementById('pc-worst').value.trim();
+  populateBeatSelect('p-best', stats.directRecords, document.getElementById('pc-best').value);
+  populateBeatSelect('p-worst', stats.directRecords, document.getElementById('pc-worst').value);
   document.getElementById('p-genre').value = stats.topGenre || '';
   document.getElementById('p-events').value = stats.events;
   document.getElementById('p-games').value = stats.games;

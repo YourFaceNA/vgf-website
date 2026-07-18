@@ -454,6 +454,11 @@
       font-size: 0.8rem;
       padding: 0.25rem 0.4rem 0.25rem 0.7rem;
     }
+    /* Genre chips match the genre-tag color used on the public beats list page */
+    .chip-input--genre .chip {
+      background: rgba(185,79,255,0.15);
+      border-color: var(--purple);
+    }
     .chip-remove {
       background: transparent;
       border: none;
@@ -761,7 +766,10 @@
           <section class="admin-tab-panel hidden" id="tab-games">
             <div class="admin-panel-header">
               <h2>Games</h2>
-              <button class="btn-submit btn-add" id="openAddGameBtn">+ Add Game</button>
+              <div style="display:flex; gap:0.5rem;">
+                <button class="btn-submit btn-add" id="manageGenresBtn">Manage Genres</button>
+                <button class="btn-submit btn-add" id="openAddGameBtn">+ Add Game</button>
+              </div>
             </div>
             <div class="admin-search">
               <input type="text" id="gamesSearch" placeholder="Search games…" />
@@ -824,11 +832,15 @@
               <input type="text" id="g-system" placeholder="e.g. NES" autocomplete="off" />
             </div>
           </div>
-          <div class="field">
-            <label for="g-genre">Genre</label>
-            <div class="autocomplete-wrap">
-              <input type="text" id="g-genre" placeholder="e.g. Platformer" autocomplete="off" />
+          <div class="field full-width">
+            <label for="g-genre-input">Genre</label>
+            <div class="chip-input chip-input--genre" id="g-genre-chipwrap">
+              <div class="chip-input-chips" id="g-genre-chips"></div>
+              <div class="autocomplete-wrap">
+                <input type="text" id="g-genre-input" placeholder="Type a genre and press Enter…" autocomplete="off" />
+              </div>
             </div>
+            <input type="hidden" id="g-genre" />
           </div>
           <div class="field full-width">
             <label for="g-players-input">Players</label>
@@ -892,11 +904,15 @@
           </div>
           <div class="field">
             <label for="p-best">Best Beat</label>
-            <input type="text" id="p-best" placeholder="e.g. Battletoads" />
+            <select id="p-best">
+              <option value="">— Select a beat —</option>
+            </select>
           </div>
           <div class="field">
             <label for="p-worst">Worst Beat</label>
-            <input type="text" id="p-worst" placeholder="e.g. Barney's Hide and Seek" />
+            <select id="p-worst">
+              <option value="">— Select a beat —</option>
+            </select>
           </div>
           <div class="field">
             <label for="p-genre">Favorite Genre</label>
@@ -952,11 +968,15 @@
           </div>
           <div class="field">
             <label for="pc-best">Best Beat</label>
-            <input type="text" id="pc-best" placeholder="e.g. Battletoads" />
+            <select id="pc-best">
+              <option value="">— Select a beat —</option>
+            </select>
           </div>
           <div class="field">
             <label for="pc-worst">Worst Beat</label>
-            <input type="text" id="pc-worst" placeholder="e.g. Barney's Hide and Seek" />
+            <select id="pc-worst">
+              <option value="">— Select a beat —</option>
+            </select>
           </div>
           <div class="field">
             <label for="pc-mvps">MVP Wins</label>
@@ -965,6 +985,38 @@
         </div>
         <button type="button" class="btn-signout" id="playerConfirmBackBtn" style="margin-top:1rem;">Back</button>
         <button type="button" class="btn-submit" id="playerConfirmUseBtn">Use This Data</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Manage Genres modal ──────────────────────────────── -->
+  <div class="player-modal-overlay" id="genreModal" hidden aria-modal="true" role="dialog" aria-label="Manage Genres">
+    <div class="player-modal-box admin-modal-box">
+      <button class="player-modal-close" id="genreModalClose" aria-label="Close">&times;</button>
+      <h2 class="admin-modal-title" id="genreModalTitle">Manage Genres</h2>
+
+      <div id="genreListView">
+        <div class="admin-search">
+          <input type="text" id="genreSearchInput" placeholder="Search genres…" />
+        </div>
+        <ul class="player-search-results" id="genreListResults"></ul>
+      </div>
+
+      <div id="genreRenameView" hidden>
+        <div class="field full-width">
+          <label>Renaming</label>
+          <div id="genreRenameFromLabel" class="player-confirm-summary"></div>
+        </div>
+        <div class="field full-width">
+          <label for="genreRenameToInput">New name</label>
+          <div class="autocomplete-wrap">
+            <input type="text" id="genreRenameToInput" placeholder="Type the correct genre name…" autocomplete="off" />
+          </div>
+        </div>
+        <div id="genreAffectedList" class="player-confirm-summary"></div>
+        <button type="button" class="btn-signout" id="genreRenameBackBtn" style="margin-top:1rem;">Back</button>
+        <button type="button" class="btn-submit" id="genreRenameConfirmBtn">Rename Everywhere</button>
+        <div class="form-status" id="genreRenameStatus" aria-live="polite"></div>
       </div>
     </div>
   </div>

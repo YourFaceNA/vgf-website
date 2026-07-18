@@ -155,8 +155,10 @@
         font-family:'Orbitron',sans-serif; font-weight:700; font-size:0.62rem; letter-spacing:0.07em;
         background:#0e0820; color:#a78bfa; border-color:#5032c8; }
 
-      /* Genre tag */
+      /* Genre tag(s) */
+      .genre-tags { display:flex; flex-wrap:wrap; gap:4px; align-items:center; }
       .genre-tag { display:inline-block; background:rgba(185,79,255,0.12); color:var(--purple); border-radius:4px; padding:2px 7px; font-size:0.72rem; }
+      .genre-tag mark.hl { background:rgba(255,140,0,0.35); border-radius:2px; color:inherit; }
 
       /* Player chips */
       .player-chips { display:flex; flex-wrap:wrap; gap:4px; align-items:center; }

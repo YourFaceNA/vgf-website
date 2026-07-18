@@ -209,9 +209,21 @@
       vals.forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o); });
     }
 
+    // Like populateSelect, but splits multi-value fields (e.g. "Platformer / Action")
+    // into individual distinct options rather than treating the joined string as one value.
+    function populateSelectMultiValue(id, key) {
+      const sel = document.getElementById(id);
+      const vals = [...new Set(
+        ALL_DATA.flatMap(r => (r[key] || '').split(PLAYER_SEPARATOR_REGEX))
+                .map(v => v.trim())
+                .filter(Boolean)
+      )].sort((a, b) => a.localeCompare(b));
+      vals.forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o); });
+    }
+
     populateSelect('filter-event', 'event');
     populateSelect('filter-system', 'system');
-    populateSelect('filter-genre', 'genre');
+    populateSelectMultiValue('filter-genre', 'genre');
 
     // Populate player select
     const pSel = document.getElementById(FILTER_IDS.player);
@@ -221,6 +233,12 @@
       if (!filterPlayer) return true;
       const parts = playersStr.split(PLAYER_SEPARATOR_REGEX);
       return parts.some(p => p.trim() === filterPlayer);
+    }
+
+    function genreMatches(genreStr, filterGenre) {
+      if (!filterGenre) return true;
+      const parts = (genreStr || '').split(PLAYER_SEPARATOR_REGEX);
+      return parts.some(g => g.trim() === filterGenre);
     }
 
     function getFilters() {
@@ -242,8 +260,8 @@
           if (r.system !== f.system && !subMatch) return false;
         }
         if (f.genre) {
-          const subMatch = (r.subs || []).some(s => s.genre === f.genre);
-          if (r.genre !== f.genre && !subMatch) return false;
+          const subMatch = (r.subs || []).some(s => genreMatches(s.genre || '', f.genre));
+          if (!genreMatches(r.genre || '', f.genre) && !subMatch) return false;
         }
 
         if (f.player) {
@@ -289,6 +307,14 @@
       if (parts.length === 0) return '';
       const chips = parts.map(p => `<span class="player-chip">${hl(p, re)}</span>`).join('');
       return `<div class="player-chips">${chips}</div>`;
+    }
+
+    function renderGenreChips(genreStr, re) {
+      if (!genreStr) return '';
+      const parts = genreStr.split(PLAYER_SEPARATOR_REGEX).map(g => g.trim()).filter(Boolean);
+      if (parts.length === 0) return '';
+      const chips = parts.map(g => `<span class="genre-tag">${hl(g, re)}</span>`).join('');
+      return `<div class="genre-tags">${chips}</div>`;
     }
 
     const SYSTEM_IMG = {
@@ -350,7 +376,7 @@
         ? `<img src="images/systems/${imgFile.includes('.') ? imgFile : imgFile + '.png'}" class="sys-logo" alt="${escapeHtml(r.system)}" loading="lazy"><span class="sys-text" style="display:none">${escapeHtml(r.system)}</span>`
         : `<span class="sys-text">${escapeHtml(r.system)}</span>`;
       const sysCell = r.system ? `<td><span class="system-badge sys-${sysSlug}">${sysContent}</span></td>` : '<td></td>';
-      const genCell = r.genre ? `<td><span class="genre-tag">${escapeHtml(r.genre)}</span></td>` : '<td></td>';
+      const genCell = r.genre ? `<td>${renderGenreChips(r.genre, re)}</td>` : '<td></td>';
       const playerCell = `<td class="players">${renderPlayerChips(r.players || '', re)}</td>`;
       return `<tr class="${isSub ? 'sub-row' : ''}">${numCell}${evCell}${gameCell}${sysCell}${genCell}${playerCell}</tr>`;
     }
@@ -366,11 +392,11 @@
       const rows = [];
       filtered.forEach(r => {
         const mainSystemMatch = !fSystem || r.system === fSystem;
-        const mainGenreMatch = !fGenre || r.genre === fGenre;
+        const mainGenreMatch = !fGenre || genreMatches(r.genre || '', fGenre);
         const mainPlayerMatch = !fPlayer || playerMatches(r.players || '', fPlayer);
         const matchingSubs = (r.subs || []).filter(s => {
           if (fSystem && s.system !== fSystem) return false;
-          if (fGenre && s.genre !== fGenre) return false;
+          if (fGenre && !genreMatches(s.genre || '', fGenre)) return false;
           if (fPlayer && !playerMatches(s.players || '', fPlayer)) return false;
           if (q) {
             const subHay = [s.game, s.players].join(' ').toLowerCase();
