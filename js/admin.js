@@ -43,6 +43,161 @@ function escHtml(str) {
   return div.innerHTML;
 }
 
+const PLAYER_SEPARATOR_REGEX = /\s*\/\s*|\s*&\s*|\s*,\s*/;
+
+/**
+ * Turns a chips-container + text-input pair into a tag/chip input for player
+ * names, backed by a plain input/hidden input whose `.value` is kept as the
+ * "/"-joined string the rest of the codebase (and beats-list.html) expects.
+ */
+function createPlayerChipInput({ chipsEl, textInputEl, valueInputEl }) {
+  let chips = [];
+
+  function sync() {
+    valueInputEl.value = chips.join(' / ');
+  }
+
+  function render() {
+    chipsEl.innerHTML = '';
+    chips.forEach((name, i) => {
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      const label = document.createElement('span');
+      label.textContent = name;
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'chip-remove';
+      removeBtn.setAttribute('aria-label', `Remove ${name}`);
+      removeBtn.textContent = '×';
+      removeBtn.addEventListener('click', () => {
+        chips.splice(i, 1);
+        render();
+        sync();
+      });
+      chip.appendChild(label);
+      chip.appendChild(removeBtn);
+      chipsEl.appendChild(chip);
+    });
+  }
+
+  function addChip(raw) {
+    const name = raw.trim();
+    if (!name) return;
+    if (!chips.some(c => c.toLowerCase() === name.toLowerCase())) {
+      chips.push(name);
+      render();
+      sync();
+    }
+    textInputEl.value = '';
+  }
+
+  function setFromString(str) {
+    chips = (str || '')
+      .split(PLAYER_SEPARATOR_REGEX)
+      .map(s => s.trim())
+      .filter(Boolean);
+    render();
+    sync();
+  }
+
+  textInputEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addChip(textInputEl.value);
+    } else if (e.key === 'Backspace' && textInputEl.value === '' && chips.length > 0) {
+      chips.pop();
+      render();
+      sync();
+    }
+  });
+  textInputEl.addEventListener('blur', () => {
+    if (textInputEl.value.trim()) addChip(textInputEl.value);
+  });
+
+  return { setFromString, getValue: () => chips.join(' / ') };
+}
+
+/**
+ * Custom-styled, width-constrained autocomplete dropdown to replace native
+ * <datalist> popups (which can't be styled and render full-viewport-width in
+ * some browsers). `getOptions()` is called lazily on each keystroke so the
+ * suggestion list can be refreshed after Firestore data loads.
+ */
+function createAutocomplete(inputEl, getOptions, { onSelect } = {}) {
+  const wrap = inputEl.closest('.autocomplete-wrap') || inputEl.parentElement;
+  const list = document.createElement('ul');
+  list.className = 'autocomplete-list';
+  list.hidden = true;
+  wrap.appendChild(list);
+
+  let items = [];
+  let activeIndex = -1;
+
+  function close() {
+    list.hidden = true;
+    activeIndex = -1;
+  }
+
+  function renderItems() {
+    list.innerHTML = '';
+    items.forEach((text, i) => {
+      const li = document.createElement('li');
+      li.textContent = text;
+      li.className = i === activeIndex ? 'active' : '';
+      li.addEventListener('mousedown', e => {
+        e.preventDefault();
+        select(text);
+      });
+      list.appendChild(li);
+    });
+    if (activeIndex >= 0) {
+      const activeLi = list.children[activeIndex];
+      if (activeLi) activeLi.scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  function select(text) {
+    inputEl.value = text;
+    close();
+    if (onSelect) onSelect(text);
+    inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  function open() {
+    const term = inputEl.value.trim().toLowerCase();
+    const all = getOptions();
+    items = term ? all.filter(o => o.toLowerCase().includes(term)) : all;
+    activeIndex = -1;
+    if (items.length === 0) {
+      close();
+      return;
+    }
+    renderItems();
+    list.hidden = false;
+  }
+
+  inputEl.addEventListener('input', open);
+  inputEl.addEventListener('focus', open);
+  inputEl.addEventListener('blur', () => setTimeout(close, 150));
+  inputEl.addEventListener('keydown', e => {
+    if (list.hidden) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIndex = Math.min(activeIndex + 1, items.length - 1);
+      renderItems();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIndex = Math.max(activeIndex - 1, 0);
+      renderItems();
+    } else if (e.key === 'Enter' && activeIndex >= 0) {
+      e.preventDefault();
+      select(items[activeIndex]);
+    } else if (e.key === 'Escape') {
+      close();
+    }
+  });
+}
+
 // ── Auth state listener ───────────────────────────────────────────────────
 onAuthStateChanged(auth, async user => {
   hide(authScreen);
@@ -104,25 +259,24 @@ document.querySelectorAll('.admin-tab-btn').forEach(b =>
   b.addEventListener('click', () => switchTab(b.dataset.tab))
 );
 
-// ── Populate datalists from existing Firestore data ───────────────────────
+// ── Autocomplete suggestion sources, refreshed from Firestore data ────────
+let knownSystems = [];
+let knownGenres  = [];
+let knownPlayerHandles = [];
+
 async function populateDatalistsFromFirestore() {
   try {
     const snap = await getDocs(query(collection(db, 'games'), orderBy('num')));
     const games = snap.docs.map(d => d.data());
-
-    const systems = [...new Set(games.map(g => g.system).filter(Boolean))].sort();
-    const genres  = [...new Set(games.map(g => g.genre).filter(Boolean))].sort();
-
-    const sysList = document.getElementById('g-system-list');
-    sysList.innerHTML = '';
-    systems.forEach(s => { const o = document.createElement('option'); o.value = s; sysList.appendChild(o); });
-
-    const genList = document.getElementById('g-genre-list');
-    genList.innerHTML = '';
-    genres.forEach(g => { const o = document.createElement('option'); o.value = g; genList.appendChild(o); });
+    knownSystems = [...new Set(games.map(g => g.system).filter(Boolean))].sort();
+    knownGenres  = [...new Set(games.map(g => g.genre).filter(Boolean))].sort();
   } catch (e) {
-    console.error('Could not populate datalists', e);
+    console.error('Could not load system/genre suggestions', e);
   }
+}
+
+function populatePlayerHandleDatalist() {
+  knownPlayerHandles = [...new Set(Array.from(playersCache.values()).map(p => p.handle).filter(Boolean))].sort();
 }
 
 // ── History logging ─────────────────────────────────────────────────────────
@@ -198,6 +352,15 @@ const hasSubsToggle   = document.getElementById('g-has-subs');
 const subEntriesPanel = document.getElementById('subEntriesPanel');
 const subEntriesList  = document.getElementById('subEntriesList');
 
+const gPlayersChip = createPlayerChipInput({
+  chipsEl: document.getElementById('g-players-chips'),
+  textInputEl: document.getElementById('g-players-input'),
+  valueInputEl: document.getElementById('g-players'),
+});
+createAutocomplete(document.getElementById('g-system'), () => knownSystems);
+createAutocomplete(document.getElementById('g-genre'), () => knownGenres);
+createAutocomplete(document.getElementById('g-players-input'), () => knownPlayerHandles);
+
 hasSubsToggle.addEventListener('change', () => {
   subEntriesPanel.hidden = !hasSubsToggle.checked;
 });
@@ -211,7 +374,7 @@ function renderSubEntryRow(sub, i) {
   const div = document.createElement('div');
   div.className = 'sub-entry-row';
 
-  const mkField = (labelText, cls, value, listId) => {
+  const mkField = (labelText, cls, value, getOptions) => {
     const wrap = document.createElement('div');
     wrap.className = 'field';
     const label = document.createElement('label');
@@ -220,16 +383,54 @@ function renderSubEntryRow(sub, i) {
     input.type = 'text';
     input.className = cls;
     input.value = value || '';
-    if (listId) input.setAttribute('list', listId);
+    input.setAttribute('autocomplete', 'off');
     wrap.appendChild(label);
-    wrap.appendChild(input);
+    if (getOptions) {
+      const acWrap = document.createElement('div');
+      acWrap.className = 'autocomplete-wrap';
+      acWrap.appendChild(input);
+      wrap.appendChild(acWrap);
+      createAutocomplete(input, getOptions);
+    } else {
+      wrap.appendChild(input);
+    }
+    return wrap;
+  };
+
+  const mkPlayersField = (labelText, cls, value) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'field';
+    const label = document.createElement('label');
+    label.textContent = labelText;
+    const chipWrap = document.createElement('div');
+    chipWrap.className = 'chip-input';
+    const chipsEl = document.createElement('div');
+    chipsEl.className = 'chip-input-chips';
+    const textInput = document.createElement('input');
+    textInput.type = 'text';
+    textInput.setAttribute('autocomplete', 'off');
+    textInput.placeholder = 'Type a name and press Enter…';
+    chipWrap.appendChild(chipsEl);
+    const acWrap = document.createElement('div');
+    acWrap.className = 'autocomplete-wrap';
+    acWrap.appendChild(textInput);
+    chipWrap.appendChild(acWrap);
+    createAutocomplete(textInput, () => knownPlayerHandles);
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.className = cls;
+    wrap.appendChild(label);
+    wrap.appendChild(chipWrap);
+    wrap.appendChild(hiddenInput);
+    const chipApi = createPlayerChipInput({ chipsEl, textInputEl: textInput, valueInputEl: hiddenInput });
+    chipApi.setFromString(value || '');
     return wrap;
   };
 
   div.appendChild(mkField('Game Title', 'sub-game', sub.game));
-  div.appendChild(mkField('System', 'sub-system', sub.system, 'g-system-list'));
-  div.appendChild(mkField('Genre', 'sub-genre', sub.genre, 'g-genre-list'));
-  div.appendChild(mkField('Players', 'sub-players', sub.players));
+  div.appendChild(mkField('System', 'sub-system', sub.system, () => knownSystems));
+  div.appendChild(mkField('Genre', 'sub-genre', sub.genre, () => knownGenres));
+  div.appendChild(mkPlayersField('Players', 'sub-players', sub.players));
 
   const heroRow = document.createElement('div');
   heroRow.className = 'checkbox-row';
@@ -261,12 +462,22 @@ document.getElementById('addSubEntryBtn').addEventListener('click', () => {
   renderSubEntries();
 });
 
+function nextGameNum() {
+  let max = 0;
+  gamesCache.forEach(data => {
+    if (typeof data.num === 'number' && data.num > max) max = data.num;
+  });
+  return max + 1;
+}
+
 function openAddGame() {
   editingGameId = null;
   gameForm.reset();
   setStatus(gameStatus, '', '');
   gEventInput.disabled = false;
   gNumInput.disabled = false;
+  gNumInput.value = nextGameNum();
+  gPlayersChip.setFromString('');
   currentSubs = [];
   hasSubsToggle.checked = false;
   subEntriesPanel.hidden = true;
@@ -286,7 +497,7 @@ function openEditGame(id) {
   document.getElementById('g-game').value = data.game || '';
   document.getElementById('g-system').value = data.system || '';
   document.getElementById('g-genre').value = data.genre || '';
-  document.getElementById('g-players').value = data.players || '';
+  gPlayersChip.setFromString(data.players || '');
   document.getElementById('g-hero').checked = !!data.hero_beat;
   currentSubs = (data.subs || []).map(s => ({ ...s }));
   hasSubsToggle.checked = currentSubs.length > 0;
@@ -301,45 +512,99 @@ function openEditGame(id) {
 
 document.getElementById('openAddGameBtn').addEventListener('click', openAddGame);
 
+let gamesSearchTerm = '';
+document.getElementById('gamesSearch').addEventListener('input', e => {
+  gamesSearchTerm = e.target.value;
+  renderGamesTable();
+});
+
 async function loadGamesTable() {
-  const tbody = document.getElementById('gamesTableBody');
   try {
     const snap = await getDocs(query(collection(db, 'games'), orderBy('num')));
     gamesCache.clear();
-    tbody.innerHTML = '';
-
-    if (snap.empty) {
-      tbody.innerHTML = '<tr><td colspan="7" class="admin-table-empty">No games yet.</td></tr>';
-      return;
-    }
-
-    snap.docs.forEach(d => {
-      gamesCache.set(d.id, d.data());
-      tbody.appendChild(renderGameRow(d.id, d.data()));
-    });
+    snap.docs.forEach(d => gamesCache.set(d.id, d.data()));
+    renderGamesTable();
   } catch (e) {
     console.error('Could not load games', e);
-    tbody.innerHTML = '<tr><td colspan="7" class="admin-table-empty">Error loading games.</td></tr>';
+    document.getElementById('gamesTableBody').innerHTML =
+      '<tr><td colspan="8" class="admin-table-empty">Error loading games.</td></tr>';
   }
 }
 
+function gameMatchesSearch(data, term) {
+  if (!term) return true;
+  const haystack = [
+    data.event, data.game, data.system, data.genre, data.players,
+    ...(data.subs || []).flatMap(s => [s.game, s.system, s.genre, s.players]),
+  ].filter(Boolean).join(' ').toLowerCase();
+  return haystack.includes(term);
+}
+
+function renderGamesTable() {
+  const tbody = document.getElementById('gamesTableBody');
+  tbody.innerHTML = '';
+
+  const term = gamesSearchTerm.trim().toLowerCase();
+  const entries = Array.from(gamesCache.entries()).filter(([, data]) => gameMatchesSearch(data, term));
+
+  if (entries.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" class="admin-table-empty">${gamesCache.size === 0 ? 'No games yet.' : 'No games match your search.'}</td></tr>`;
+    return;
+  }
+
+  entries.forEach(([id, data]) => {
+    const { row, subRow } = renderGameRow(id, data);
+    tbody.appendChild(row);
+    if (subRow) tbody.appendChild(subRow);
+  });
+}
+
 function renderGameRow(id, data) {
+  const subs = data.subs || [];
+  const hasSubs = subs.length > 0;
+
   const tr = document.createElement('tr');
   tr.innerHTML = `
-    <td>${escHtml(data.event)}</td>
+    <td>${hasSubs ? '<button type="button" class="row-expand-btn" aria-label="Toggle sub entries">▶</button>' : '<span class="row-expand-spacer"></span>'}</td>
     <td>${escHtml(data.num)}</td>
+    <td>${escHtml(data.event)}</td>
     <td>${escHtml(data.game)}</td>
     <td>${escHtml(data.system || '')}</td>
     <td>${escHtml(data.genre || '')}</td>
     <td>${escHtml(data.players || '')}</td>
     <td class="admin-row-actions">
-      <button class="admin-row-btn edit">Edit</button>
-      <button class="admin-row-btn delete">Delete</button>
+      <div class="admin-row-actions-inner">
+        <button class="admin-row-btn edit">Edit</button>
+        <button class="admin-row-btn delete">Delete</button>
+      </div>
     </td>
   `;
   tr.querySelector('.edit').addEventListener('click', () => openEditGame(id));
   tr.querySelector('.delete').addEventListener('click', () => confirmDeleteGame(id, data.game));
-  return tr;
+
+  let subRow = null;
+  if (hasSubs) {
+    subRow = document.createElement('tr');
+    subRow.className = 'sub-entry-display-row';
+    const lines = subs.map(s => {
+      const heroTag = s.hero_beat ? '<span class="hero-tag">Hero Beat</span>' : '';
+      const bits = [escHtml(s.game)];
+      if (s.system) bits.push(escHtml(s.system));
+      if (s.genre) bits.push(escHtml(s.genre));
+      if (s.players) bits.push(escHtml(s.players));
+      return `<div class="sub-entry-display-name">↳ ${bits.join(' — ')}${heroTag}</div>`;
+    }).join('');
+    subRow.innerHTML = `<td colspan="8">${lines}</td>`;
+
+    const expandBtn = tr.querySelector('.row-expand-btn');
+    expandBtn.addEventListener('click', () => {
+      const isOpen = subRow.classList.toggle('open');
+      expandBtn.classList.toggle('open', isOpen);
+      expandBtn.textContent = isOpen ? '▼' : '▶';
+    });
+  }
+
+  return { row: tr, subRow };
 }
 
 async function confirmDeleteGame(id, name) {
@@ -437,22 +702,13 @@ const playerForm       = document.getElementById('playerForm');
 const playerModalTitle = document.getElementById('playerModalTitle');
 const playerSubmitBtn  = document.getElementById('playerSubmitBtn');
 const playerStatus     = document.getElementById('playerStatus');
+const searchPlayerDataBtn = document.getElementById('searchPlayerDataBtn');
+const playerSearchView    = document.getElementById('playerSearchView');
+const playerConfirmView   = document.getElementById('playerConfirmView');
+const playerSearchInput   = document.getElementById('playerSearchInput');
+const playerSearchResults = document.getElementById('playerSearchResults');
 
-function openAddPlayer() {
-  editingPlayerId = null;
-  playerForm.reset();
-  setStatus(playerStatus, '', '');
-  pKeyInput.disabled = false;
-  playerModalTitle.textContent = 'Add a Player Profile';
-  playerSubmitBtn.textContent = 'Add Player';
-  openModal(playerModal);
-}
-
-function openEditPlayer(id) {
-  const data = playersCache.get(id);
-  if (!data) return;
-  editingPlayerId = id;
-  setStatus(playerStatus, '', '');
+function fillPlayerForm(data) {
   pKeyInput.value = data.playerKey || '';
   document.getElementById('p-handle').value = data.handle || '';
   document.getElementById('p-realname').value = data.realName || '';
@@ -465,7 +721,35 @@ function openEditPlayer(id) {
   document.getElementById('p-games').value = data.games != null ? data.games : '';
   document.getElementById('p-mvps').value = data.mvps != null ? data.mvps : '';
   document.getElementById('p-photo').value = '';
+}
+
+function showPlayerFormView() {
+  playerForm.hidden = false;
+  playerSearchView.hidden = true;
+  playerConfirmView.hidden = true;
+}
+
+function openAddPlayer() {
+  editingPlayerId = null;
+  playerForm.reset();
+  setStatus(playerStatus, '', '');
+  pKeyInput.disabled = false;
+  showPlayerFormView();
+  searchPlayerDataBtn.hidden = false;
+  playerModalTitle.textContent = 'Add a Player Profile';
+  playerSubmitBtn.textContent = 'Add Player';
+  openModal(playerModal);
+}
+
+function openEditPlayer(id) {
+  const data = playersCache.get(id);
+  if (!data) return;
+  editingPlayerId = id;
+  setStatus(playerStatus, '', '');
+  fillPlayerForm(data);
   pKeyInput.disabled = true;
+  showPlayerFormView();
+  searchPlayerDataBtn.hidden = true;
   playerModalTitle.textContent = 'Edit Player Profile';
   playerSubmitBtn.textContent = 'Save Changes';
   openModal(playerModal);
@@ -473,29 +757,178 @@ function openEditPlayer(id) {
 
 document.getElementById('openAddPlayerBtn').addEventListener('click', openAddPlayer);
 
+// ── Search Player Data: pull stats from the beats list (games collection) ──
+function playerInGame(playersStr, playerKey) {
+  return (playersStr || '').split(PLAYER_SEPARATOR_REGEX).map(p => p.trim()).some(p => p === playerKey);
+}
+
+function topValue(arr) {
+  if (!arr.length) return null;
+  const freq = {};
+  arr.forEach(v => { freq[v] = (freq[v] || 0) + 1; });
+  return Object.entries(freq).sort((a, b) => b[1] - a[1])[0][0];
+}
+
+function getKnownGamePlayerNames() {
+  const names = new Set();
+  gamesCache.forEach(data => {
+    (data.players || '').split(PLAYER_SEPARATOR_REGEX).forEach(n => { if (n.trim()) names.add(n.trim()); });
+    (data.subs || []).forEach(s => (s.players || '').split(PLAYER_SEPARATOR_REGEX).forEach(n => { if (n.trim()) names.add(n.trim()); }));
+  });
+  return [...names].sort();
+}
+
+function computePlayerStatsFromGames(playerKey) {
+  const directRecords = [];
+  gamesCache.forEach(r => {
+    if (r.is_sub) return;
+    if (playerInGame(r.players, playerKey)) directRecords.push(r);
+    (r.subs || []).forEach(s => {
+      if (playerInGame(s.players, playerKey)) directRecords.push({ ...s, event: r.event });
+    });
+  });
+  const events    = new Set(directRecords.map(r => r.event)).size;
+  const heroBeats = directRecords.filter(r => r.hero_beat).length;
+  const topGenre  = topValue(directRecords.map(r => r.genre).filter(Boolean));
+  const topSystem = topValue(directRecords.map(r => r.system).filter(Boolean));
+  return { directRecords, games: directRecords.length, events, heroBeats, topGenre, topSystem };
+}
+
+let pendingPulledPlayer = null; // { name, stats } selected from search, awaiting confirmation
+
+function renderPlayerSearchResults(term) {
+  const names = getKnownGamePlayerNames();
+  const filtered = term ? names.filter(n => n.toLowerCase().includes(term.toLowerCase())) : names;
+
+  playerSearchResults.innerHTML = '';
+  if (filtered.length === 0) {
+    playerSearchResults.innerHTML = '<li class="admin-table-empty">No matching names found.</li>';
+    return;
+  }
+  filtered.forEach(name => {
+    const li = document.createElement('li');
+    li.textContent = name;
+    li.addEventListener('click', () => selectSearchedPlayer(name));
+    playerSearchResults.appendChild(li);
+  });
+}
+
+function selectSearchedPlayer(name) {
+  const stats = computePlayerStatsFromGames(name);
+  pendingPulledPlayer = { name, stats };
+
+  const summary = document.getElementById('playerConfirmSummary');
+  const gamesListHtml = stats.directRecords
+    .slice(0, 20)
+    .map(r => `<div>${escHtml(r.game)} — ${escHtml(r.event)}${r.hero_beat ? ' ★' : ''}</div>`)
+    .join('') || '<div>No matched beats found.</div>';
+
+  summary.innerHTML = `
+    <div class="confirm-stats">
+      <div><div class="confirm-stat-val">${stats.games}</div><div class="confirm-stat-label">Games Beaten</div></div>
+      <div><div class="confirm-stat-val">${stats.events}</div><div class="confirm-stat-label">Events Attended</div></div>
+      <div><div class="confirm-stat-val">${stats.heroBeats}</div><div class="confirm-stat-label">Hero Beats</div></div>
+      <div><div class="confirm-stat-val" style="font-size:0.55rem;">${escHtml(stats.topGenre || '—')}</div><div class="confirm-stat-label">Top Genre</div></div>
+      <div><div class="confirm-stat-val" style="font-size:0.55rem;">${escHtml(stats.topSystem || '—')}</div><div class="confirm-stat-label">Top System</div></div>
+    </div>
+    <div class="confirm-games-list">${gamesListHtml}${stats.directRecords.length > 20 ? `<div>…and ${stats.directRecords.length - 20} more</div>` : ''}</div>
+  `;
+
+  document.getElementById('pc-realname').value = '';
+  document.getElementById('pc-location').value = '';
+  document.getElementById('pc-debut').value = '';
+  document.getElementById('pc-best').value = '';
+  document.getElementById('pc-worst').value = '';
+  document.getElementById('pc-mvps').value = '';
+
+  playerSearchView.hidden = true;
+  playerConfirmView.hidden = false;
+}
+
+searchPlayerDataBtn.addEventListener('click', () => {
+  playerForm.hidden = true;
+  playerConfirmView.hidden = true;
+  playerSearchView.hidden = false;
+  playerSearchInput.value = '';
+  renderPlayerSearchResults('');
+  playerSearchInput.focus();
+});
+
+playerSearchInput.addEventListener('input', () => renderPlayerSearchResults(playerSearchInput.value.trim()));
+
+document.getElementById('playerSearchCancelBtn').addEventListener('click', () => {
+  showPlayerFormView();
+});
+
+document.getElementById('playerConfirmBackBtn').addEventListener('click', () => {
+  playerConfirmView.hidden = true;
+  playerSearchView.hidden = false;
+});
+
+document.getElementById('playerConfirmUseBtn').addEventListener('click', () => {
+  if (!pendingPulledPlayer) return;
+  const { name, stats } = pendingPulledPlayer;
+
+  pKeyInput.value = name;
+  document.getElementById('p-handle').value = name;
+  document.getElementById('p-realname').value = document.getElementById('pc-realname').value.trim();
+  document.getElementById('p-location').value = document.getElementById('pc-location').value.trim();
+  document.getElementById('p-debut').value = document.getElementById('pc-debut').value.trim();
+  document.getElementById('p-best').value = document.getElementById('pc-best').value.trim();
+  document.getElementById('p-worst').value = document.getElementById('pc-worst').value.trim();
+  document.getElementById('p-genre').value = stats.topGenre || '';
+  document.getElementById('p-events').value = stats.events;
+  document.getElementById('p-games').value = stats.games;
+  document.getElementById('p-mvps').value = document.getElementById('pc-mvps').value.trim();
+
+  pendingPulledPlayer = null;
+  setStatus(playerStatus, `Pulled data for "${name}" from the beats list — review before saving.`, '');
+  showPlayerFormView();
+});
+
+let playersSearchTerm = '';
+document.getElementById('playersSearch').addEventListener('input', e => {
+  playersSearchTerm = e.target.value;
+  renderPlayersTable();
+});
+
 async function loadPlayersTable() {
-  const tbody = document.getElementById('playersTableBody');
   try {
     const snap = await getDocs(collection(db, 'players'));
     playersCache.clear();
-    const docs = snap.docs.slice().sort((a, b) =>
-      (a.data().handle || '').localeCompare(b.data().handle || '')
-    );
-    tbody.innerHTML = '';
-
-    if (docs.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" class="admin-table-empty">No players yet.</td></tr>';
-      return;
-    }
-
-    docs.forEach(d => {
-      playersCache.set(d.id, d.data());
-      tbody.appendChild(renderPlayerRow(d.id, d.data()));
-    });
+    snap.docs.forEach(d => playersCache.set(d.id, d.data()));
+    renderPlayersTable();
+    populatePlayerHandleDatalist();
   } catch (e) {
     console.error('Could not load players', e);
-    tbody.innerHTML = '<tr><td colspan="6" class="admin-table-empty">Error loading players.</td></tr>';
+    document.getElementById('playersTableBody').innerHTML =
+      '<tr><td colspan="6" class="admin-table-empty">Error loading players.</td></tr>';
   }
+}
+
+
+function playerMatchesSearch(data, term) {
+  if (!term) return true;
+  const haystack = [data.handle, data.realName, data.location, data.favoriteGenre]
+    .filter(Boolean).join(' ').toLowerCase();
+  return haystack.includes(term);
+}
+
+function renderPlayersTable() {
+  const tbody = document.getElementById('playersTableBody');
+  tbody.innerHTML = '';
+
+  const term = playersSearchTerm.trim().toLowerCase();
+  const entries = Array.from(playersCache.entries())
+    .filter(([, data]) => playerMatchesSearch(data, term))
+    .sort((a, b) => (a[1].handle || '').localeCompare(b[1].handle || ''));
+
+  if (entries.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="admin-table-empty">${playersCache.size === 0 ? 'No players yet.' : 'No players match your search.'}</td></tr>`;
+    return;
+  }
+
+  entries.forEach(([id, data]) => tbody.appendChild(renderPlayerRow(id, data)));
 }
 
 function renderPlayerRow(id, data) {
@@ -507,8 +940,10 @@ function renderPlayerRow(id, data) {
     <td>${escHtml(data.events != null ? data.events : 0)}</td>
     <td>${escHtml(data.mvps != null ? data.mvps : 0)}</td>
     <td class="admin-row-actions">
-      <button class="admin-row-btn edit">Edit</button>
-      <button class="admin-row-btn delete">Delete</button>
+      <div class="admin-row-actions-inner">
+        <button class="admin-row-btn edit">Edit</button>
+        <button class="admin-row-btn delete">Delete</button>
+      </div>
     </td>
   `;
   tr.querySelector('.edit').addEventListener('click', () => openEditPlayer(id));
@@ -557,6 +992,15 @@ playerForm.addEventListener('submit', async e => {
   const docId  = isEdit ? editingPlayerId : playerKey.replace(/[^a-zA-Z0-9_-]/g, '_');
 
   try {
+    if (!isEdit) {
+      const existing = await getDoc(doc(db, 'players', docId));
+      if (existing.exists()) {
+        setStatus(playerStatus, `A player already exists for Player Key "${playerKey}". Edit it instead, or use a different key.`, 'error');
+        playerSubmitBtn.disabled = false;
+        return;
+      }
+    }
+
     let photoUrl = isEdit ? (playersCache.get(docId)?.photoUrl || '') : '';
     if (photoFile) {
       setStatus(playerStatus, 'Uploading photo…', '');
