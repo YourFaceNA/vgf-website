@@ -1,23 +1,11 @@
-import { initializeApp }                                                   from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 import {
   getFirestore, collection, doc, getDoc, setDoc, getDocs, addDoc, deleteDoc,
-  query, orderBy, limit, serverTimestamp, writeBatch,
+  query, orderBy, limit, serverTimestamp, writeBatch, Timestamp,
 }                                                                            from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL }     from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js';
+import { app } from './firebase-config.js';
 
-// ── TODO: Replace with your Firebase project config ──────────────────────
-// Firebase console > Project Settings > Your apps > SDK setup and configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyAivaXUB_eCki-I6H2kgYasRNoiVNzEaZw",
-  authDomain: "video-game-festival.firebaseapp.com",
-  projectId: "video-game-festival",
-  storageBucket: "video-game-festival.firebasestorage.app",
-  messagingSenderId: "962832070480",
-  appId: "1:962832070480:web:eaea96982709155f561e55",
-};
-
-const app      = initializeApp(firebaseConfig);
 const auth     = getAuth(app);
 const db       = getFirestore(app);
 const storage  = getStorage(app);
@@ -222,6 +210,10 @@ onAuthStateChanged(auth, async user => {
   populateDatalistsFromFirestore();
   loadGamesTable();
   loadPlayersTable();
+  loadStreamsTable();
+  loadScheduleTable();
+  loadLiveConfig();
+  loadDonationConfig();
   loadHistory();
 });
 
@@ -314,28 +306,31 @@ function diffFields(before, after) {
 }
 
 // ── Modal open/close helpers ────────────────────────────────────────────────
-const gameModal   = document.getElementById('gameModal');
-const playerModal = document.getElementById('playerModal');
-const genreModal  = document.getElementById('genreModal');
+const gameModal     = document.getElementById('gameModal');
+const playerModal   = document.getElementById('playerModal');
+const genreModal    = document.getElementById('genreModal');
+const streamModal   = document.getElementById('streamModal');
+const scheduleModal = document.getElementById('scheduleModal');
 
 function openModal(overlay) { overlay.hidden = false; }
 function closeModal(overlay) { overlay.hidden = true; }
 
-[gameModal, playerModal, genreModal].forEach(overlay => {
+const allModals = [gameModal, playerModal, genreModal, streamModal, scheduleModal];
+allModals.forEach(overlay => {
   overlay.addEventListener('click', e => {
     if (e.target === e.currentTarget) closeModal(overlay);
   });
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
-    closeModal(gameModal);
-    closeModal(playerModal);
-    closeModal(genreModal);
+    allModals.forEach(closeModal);
   }
 });
 document.getElementById('gameModalClose').addEventListener('click', () => closeModal(gameModal));
 document.getElementById('playerModalClose').addEventListener('click', () => closeModal(playerModal));
 document.getElementById('genreModalClose').addEventListener('click', () => closeModal(genreModal));
+document.getElementById('streamModalClose').addEventListener('click', () => closeModal(streamModal));
+document.getElementById('scheduleModalClose').addEventListener('click', () => closeModal(scheduleModal));
 
 // ══════════════════════════════════════════════════════════════════════════
 // GAMES
@@ -696,6 +691,434 @@ gameForm.addEventListener('submit', async e => {
     setStatus(gameStatus, 'Error: ' + err.message, 'error');
   } finally {
     gameSubmitBtn.disabled = false;
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// STREAMS
+// ══════════════════════════════════════════════════════════════════════════
+
+const streamsCache = new Map();
+let editingStreamId = null;
+
+const streamForm      = document.getElementById('streamForm');
+const streamModalTitle = document.getElementById('streamModalTitle');
+const streamSubmitBtn  = document.getElementById('streamSubmitBtn');
+const streamStatus     = document.getElementById('streamStatus');
+const sPlatformSelect  = document.getElementById('s-platform');
+const sTwitchField     = document.getElementById('s-twitch-field');
+const sYoutubeField    = document.getElementById('s-youtube-field');
+
+function updateStreamPlatformFields() {
+  const isTwitch = sPlatformSelect.value === 'twitch';
+  sTwitchField.hidden  = !isTwitch;
+  sYoutubeField.hidden = isTwitch;
+}
+sPlatformSelect.addEventListener('change', updateStreamPlatformFields);
+
+function openAddStream() {
+  editingStreamId = null;
+  streamForm.reset();
+  setStatus(streamStatus, '', '');
+  document.getElementById('s-order').value = streamsCache.size;
+  document.getElementById('s-active').checked = true;
+  updateStreamPlatformFields();
+  streamModalTitle.textContent = 'Add a Stream';
+  streamSubmitBtn.textContent = 'Add Stream';
+  openModal(streamModal);
+}
+
+function openEditStream(id) {
+  const data = streamsCache.get(id);
+  if (!data) return;
+  editingStreamId = id;
+  setStatus(streamStatus, '', '');
+  document.getElementById('s-label').value = data.label || '';
+  sPlatformSelect.value = data.platform || 'twitch';
+  document.getElementById('s-order').value = data.order != null ? data.order : 0;
+  document.getElementById('s-channel').value = data.channelName || '';
+  document.getElementById('s-youtube-id').value = data.youtubeEmbedId || '';
+  document.getElementById('s-active').checked = data.active !== false;
+  updateStreamPlatformFields();
+  streamModalTitle.textContent = 'Edit Stream';
+  streamSubmitBtn.textContent = 'Save Changes';
+  openModal(streamModal);
+}
+
+document.getElementById('openAddStreamBtn').addEventListener('click', openAddStream);
+
+async function loadStreamsTable() {
+  try {
+    const snap = await getDocs(query(collection(db, 'streams'), orderBy('order')));
+    streamsCache.clear();
+    snap.docs.forEach(d => streamsCache.set(d.id, d.data()));
+    renderStreamsTable();
+  } catch (e) {
+    console.error('Could not load streams', e);
+    document.getElementById('streamsTableBody').innerHTML =
+      '<tr><td colspan="6" class="admin-table-empty">Error loading streams.</td></tr>';
+  }
+}
+
+function renderStreamsTable() {
+  const tbody = document.getElementById('streamsTableBody');
+  tbody.innerHTML = '';
+
+  if (streamsCache.size === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="admin-table-empty">No streams yet.</td></tr>';
+    return;
+  }
+
+  Array.from(streamsCache.entries()).forEach(([id, data]) => {
+    tbody.appendChild(renderStreamRow(id, data));
+  });
+}
+
+function renderStreamRow(id, data) {
+  const tr = document.createElement('tr');
+  const channelOrId = data.platform === 'youtube' ? (data.youtubeEmbedId || '') : (data.channelName || '');
+  tr.innerHTML = `
+    <td>${escHtml(data.order != null ? data.order : 0)}</td>
+    <td>${escHtml(data.label)}</td>
+    <td>${escHtml(data.platform)}</td>
+    <td>${escHtml(channelOrId)}</td>
+    <td>${data.active !== false ? 'Yes' : 'No'}</td>
+    <td class="admin-row-actions">
+      <div class="admin-row-actions-inner">
+        <button class="admin-row-btn edit">Edit</button>
+        <button class="admin-row-btn delete">Delete</button>
+      </div>
+    </td>
+  `;
+  tr.querySelector('.edit').addEventListener('click', () => openEditStream(id));
+  tr.querySelector('.delete').addEventListener('click', () => confirmDeleteStream(id, data.label));
+  return tr;
+}
+
+async function confirmDeleteStream(id, label) {
+  if (!confirm(`Delete stream "${label}"? This cannot be undone.`)) return;
+  const before = streamsCache.get(id);
+  try {
+    await deleteDoc(doc(db, 'streams', id));
+    await logHistory('delete', 'stream', id, label, { deleted: before });
+    await loadStreamsTable();
+  } catch (e) {
+    console.error(e);
+    alert('Error deleting stream: ' + e.message);
+  }
+}
+
+streamForm.addEventListener('submit', async e => {
+  e.preventDefault();
+
+  const label     = document.getElementById('s-label').value.trim();
+  const platform  = sPlatformSelect.value;
+  const order     = parseInt(document.getElementById('s-order').value, 10) || 0;
+  const channelName    = document.getElementById('s-channel').value.trim();
+  const youtubeEmbedId = document.getElementById('s-youtube-id').value.trim();
+  const active    = document.getElementById('s-active').checked;
+
+  if (!label) {
+    setStatus(streamStatus, 'Label is required.', 'error');
+    return;
+  }
+  if (platform === 'twitch' && !channelName) {
+    setStatus(streamStatus, 'Twitch Channel Name is required.', 'error');
+    return;
+  }
+  if (platform === 'youtube' && !youtubeEmbedId) {
+    setStatus(streamStatus, 'YouTube Live Video ID is required.', 'error');
+    return;
+  }
+
+  streamSubmitBtn.disabled = true;
+  setStatus(streamStatus, 'Saving…', '');
+
+  const isEdit = editingStreamId !== null;
+  const newData = {
+    label, platform, order, channelName, youtubeEmbedId, active,
+    updatedAt: serverTimestamp(),
+  };
+
+  try {
+    if (isEdit) {
+      const before = streamsCache.get(editingStreamId);
+      await setDoc(doc(db, 'streams', editingStreamId), newData, { merge: true });
+      await logHistory('edit', 'stream', editingStreamId, label, diffFields(before, newData));
+      setStatus(streamStatus, `"${label}" updated successfully.`, 'success');
+    } else {
+      newData.createdAt = serverTimestamp();
+      const ref = await addDoc(collection(db, 'streams'), newData);
+      await logHistory('add', 'stream', ref.id, label, { created: newData });
+      setStatus(streamStatus, `"${label}" added successfully.`, 'success');
+    }
+    await loadStreamsTable();
+    closeModal(streamModal);
+  } catch (err) {
+    console.error(err);
+    setStatus(streamStatus, 'Error: ' + err.message, 'error');
+  } finally {
+    streamSubmitBtn.disabled = false;
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// SCHEDULE
+// ══════════════════════════════════════════════════════════════════════════
+
+const scheduleCache = new Map();
+let editingScheduleId = null;
+
+const scheduleForm      = document.getElementById('scheduleForm');
+const scheduleModalTitle = document.getElementById('scheduleModalTitle');
+const scheduleSubmitBtn  = document.getElementById('scheduleSubmitBtn');
+const scheduleStatus     = document.getElementById('scheduleStatus');
+
+function toDatetimeLocalValue(timestamp) {
+  if (!timestamp) return '';
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  const pad = n => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function openAddSchedule() {
+  editingScheduleId = null;
+  scheduleForm.reset();
+  setStatus(scheduleStatus, '', '');
+  scheduleModalTitle.textContent = 'Add a Schedule Item';
+  scheduleSubmitBtn.textContent = 'Add Schedule Item';
+  openModal(scheduleModal);
+}
+
+function openEditSchedule(id) {
+  const data = scheduleCache.get(id);
+  if (!data) return;
+  editingScheduleId = id;
+  setStatus(scheduleStatus, '', '');
+  document.getElementById('sch-title').value = data.title || '';
+  document.getElementById('sch-description').value = data.description || '';
+  document.getElementById('sch-start').value = toDatetimeLocalValue(data.startTime);
+  document.getElementById('sch-end').value = toDatetimeLocalValue(data.endTime);
+  document.getElementById('sch-pinned').checked = !!data.pinned;
+  scheduleModalTitle.textContent = 'Edit Schedule Item';
+  scheduleSubmitBtn.textContent = 'Save Changes';
+  openModal(scheduleModal);
+}
+
+document.getElementById('openAddScheduleBtn').addEventListener('click', openAddSchedule);
+
+async function loadScheduleTable() {
+  try {
+    const snap = await getDocs(query(collection(db, 'schedule'), orderBy('startTime')));
+    scheduleCache.clear();
+    snap.docs.forEach(d => scheduleCache.set(d.id, d.data()));
+    renderScheduleTable();
+  } catch (e) {
+    console.error('Could not load schedule', e);
+    document.getElementById('scheduleTableBody').innerHTML =
+      '<tr><td colspan="5" class="admin-table-empty">Error loading schedule.</td></tr>';
+  }
+}
+
+function renderScheduleTable() {
+  const tbody = document.getElementById('scheduleTableBody');
+  tbody.innerHTML = '';
+
+  if (scheduleCache.size === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="admin-table-empty">No schedule items yet.</td></tr>';
+    return;
+  }
+
+  Array.from(scheduleCache.entries()).forEach(([id, data]) => {
+    tbody.appendChild(renderScheduleRow(id, data));
+  });
+}
+
+function renderScheduleRow(id, data) {
+  const tr = document.createElement('tr');
+  const start = data.startTime && data.startTime.toDate ? data.startTime.toDate().toLocaleString() : '';
+  const end   = data.endTime && data.endTime.toDate ? data.endTime.toDate().toLocaleString() : '';
+  tr.innerHTML = `
+    <td>${escHtml(start)}</td>
+    <td>${escHtml(end)}</td>
+    <td>${escHtml(data.title)}</td>
+    <td>${data.pinned ? 'Yes' : 'No'}</td>
+    <td class="admin-row-actions">
+      <div class="admin-row-actions-inner">
+        <button class="admin-row-btn edit">Edit</button>
+        <button class="admin-row-btn delete">Delete</button>
+      </div>
+    </td>
+  `;
+  tr.querySelector('.edit').addEventListener('click', () => openEditSchedule(id));
+  tr.querySelector('.delete').addEventListener('click', () => confirmDeleteSchedule(id, data.title));
+  return tr;
+}
+
+async function confirmDeleteSchedule(id, title) {
+  if (!confirm(`Delete schedule item "${title}"? This cannot be undone.`)) return;
+  const before = scheduleCache.get(id);
+  try {
+    await deleteDoc(doc(db, 'schedule', id));
+    await logHistory('delete', 'schedule', id, title, { deleted: before });
+    await loadScheduleTable();
+  } catch (e) {
+    console.error(e);
+    alert('Error deleting schedule item: ' + e.message);
+  }
+}
+
+scheduleForm.addEventListener('submit', async e => {
+  e.preventDefault();
+
+  const title       = document.getElementById('sch-title').value.trim();
+  const description = document.getElementById('sch-description').value.trim();
+  const startVal    = document.getElementById('sch-start').value;
+  const endVal      = document.getElementById('sch-end').value;
+  const pinned      = document.getElementById('sch-pinned').checked;
+
+  if (!title || !startVal) {
+    setStatus(scheduleStatus, 'Title and Start Time are required.', 'error');
+    return;
+  }
+
+  scheduleSubmitBtn.disabled = true;
+  setStatus(scheduleStatus, 'Saving…', '');
+
+  const isEdit = editingScheduleId !== null;
+  const newData = {
+    title, description,
+    startTime: Timestamp.fromDate(new Date(startVal)),
+    endTime: endVal ? Timestamp.fromDate(new Date(endVal)) : null,
+    pinned,
+    updatedAt: serverTimestamp(),
+  };
+
+  try {
+    if (isEdit) {
+      const before = scheduleCache.get(editingScheduleId);
+      await setDoc(doc(db, 'schedule', editingScheduleId), newData, { merge: true });
+      await logHistory('edit', 'schedule', editingScheduleId, title, diffFields(before, newData));
+      setStatus(scheduleStatus, `"${title}" updated successfully.`, 'success');
+    } else {
+      newData.createdAt = serverTimestamp();
+      const ref = await addDoc(collection(db, 'schedule'), newData);
+      await logHistory('add', 'schedule', ref.id, title, { created: newData });
+      setStatus(scheduleStatus, `"${title}" added successfully.`, 'success');
+    }
+    await loadScheduleTable();
+    closeModal(scheduleModal);
+  } catch (err) {
+    console.error(err);
+    setStatus(scheduleStatus, 'Error: ' + err.message, 'error');
+  } finally {
+    scheduleSubmitBtn.disabled = false;
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// LIVE EVENT (isLive toggle + donation settings — singleton siteConfig docs)
+// ══════════════════════════════════════════════════════════════════════════
+
+const liveForm = document.getElementById('liveForm');
+const liveStatus = document.getElementById('liveStatus');
+const liveStatusBadge = document.getElementById('liveStatusBadge');
+
+function updateLiveStatusBadge(isLive) {
+  liveStatusBadge.textContent = isLive ? 'LIVE' : 'OFFLINE';
+  liveStatusBadge.className = 'history-action ' + (isLive ? 'add' : 'delete');
+}
+
+async function loadLiveConfig() {
+  try {
+    const snap = await getDoc(doc(db, 'siteConfig', 'liveEvent'));
+    const data = snap.exists() ? snap.data() : {};
+    document.getElementById('live-isLive').checked = !!data.isLive;
+    document.getElementById('live-title').value = data.liveTitle || '';
+    updateLiveStatusBadge(!!data.isLive);
+  } catch (e) {
+    console.error('Could not load live config', e);
+  }
+}
+
+liveForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  const isLive = document.getElementById('live-isLive').checked;
+  const liveTitle = document.getElementById('live-title').value.trim();
+  const submitBtn = document.getElementById('liveSubmitBtn');
+
+  submitBtn.disabled = true;
+  setStatus(liveStatus, 'Saving…', '');
+  try {
+    const user = auth.currentUser;
+    await setDoc(doc(db, 'siteConfig', 'liveEvent'), {
+      isLive, liveTitle,
+      updatedAt: serverTimestamp(),
+      updatedBy: user.uid,
+    }, { merge: true });
+    await logHistory('edit', 'siteConfig', 'liveEvent', 'Live Mode', { isLive, liveTitle });
+    updateLiveStatusBadge(isLive);
+    setStatus(liveStatus, 'Live settings saved.', 'success');
+  } catch (err) {
+    console.error(err);
+    setStatus(liveStatus, 'Error: ' + err.message, 'error');
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+const donationForm = document.getElementById('donationForm');
+const donationStatus = document.getElementById('donationStatus');
+
+async function loadDonationConfig() {
+  try {
+    const snap = await getDoc(doc(db, 'siteConfig', 'donation'));
+    const data = snap.exists() ? snap.data() : {};
+    document.getElementById('don-enabled').checked = data.enabled !== false;
+    document.getElementById('don-headline').value = data.headline || '';
+    document.getElementById('don-blurb').value = data.blurb || '';
+    document.getElementById('don-primary-label').value = data.primaryLinkLabel || '';
+    document.getElementById('don-primary-url').value = data.primaryLinkUrl || '';
+    document.getElementById('don-secondary-label').value = data.secondaryLinkLabel || '';
+    document.getElementById('don-secondary-url').value = data.secondaryLinkUrl || '';
+    document.getElementById('don-goal').value = data.goalAmount != null ? data.goalAmount : '';
+    document.getElementById('don-raised').value = data.raisedAmount != null ? data.raisedAmount : '';
+  } catch (e) {
+    console.error('Could not load donation config', e);
+  }
+}
+
+donationForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  const submitBtn = document.getElementById('donationSubmitBtn');
+  const goalVal = document.getElementById('don-goal').value;
+  const raisedVal = document.getElementById('don-raised').value;
+
+  const newData = {
+    enabled: document.getElementById('don-enabled').checked,
+    headline: document.getElementById('don-headline').value.trim(),
+    blurb: document.getElementById('don-blurb').value.trim(),
+    primaryLinkLabel: document.getElementById('don-primary-label').value.trim(),
+    primaryLinkUrl: document.getElementById('don-primary-url').value.trim(),
+    secondaryLinkLabel: document.getElementById('don-secondary-label').value.trim(),
+    secondaryLinkUrl: document.getElementById('don-secondary-url').value.trim(),
+    goalAmount: goalVal ? Number(goalVal) : null,
+    raisedAmount: raisedVal ? Number(raisedVal) : null,
+    updatedAt: serverTimestamp(),
+    updatedBy: auth.currentUser.uid,
+  };
+
+  submitBtn.disabled = true;
+  setStatus(donationStatus, 'Saving…', '');
+  try {
+    await setDoc(doc(db, 'siteConfig', 'donation'), newData, { merge: true });
+    await logHistory('edit', 'siteConfig', 'donation', 'Donation Settings', newData);
+    setStatus(donationStatus, 'Donation settings saved.', 'success');
+  } catch (err) {
+    console.error(err);
+    setStatus(donationStatus, 'Error: ' + err.message, 'error');
+  } finally {
+    submitBtn.disabled = false;
   }
 });
 

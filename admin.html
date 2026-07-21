@@ -727,6 +727,9 @@
         <nav class="admin-sidebar">
           <button class="admin-tab-btn active" data-tab="players">Players</button>
           <button class="admin-tab-btn" data-tab="games">Games</button>
+          <button class="admin-tab-btn" data-tab="streams">Streams</button>
+          <button class="admin-tab-btn" data-tab="schedule">Schedule</button>
+          <button class="admin-tab-btn" data-tab="live">Live Event</button>
           <button class="admin-tab-btn" data-tab="history">History</button>
           <div id="adminUserInfo">
             <span id="adminUserEmail"></span>
@@ -790,6 +793,123 @@
                 </thead>
                 <tbody id="gamesTableBody"></tbody>
               </table>
+            </div>
+          </section>
+
+          <!-- ── Streams tab ──────────────────────────────── -->
+          <section class="admin-tab-panel hidden" id="tab-streams">
+            <div class="admin-panel-header">
+              <h2>Streams</h2>
+              <button class="btn-submit btn-add" id="openAddStreamBtn">+ Add Stream</button>
+            </div>
+            <div class="admin-table-wrap">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Order</th>
+                    <th>Label</th>
+                    <th>Platform</th>
+                    <th>Channel / ID</th>
+                    <th>Active</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="streamsTableBody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- ── Schedule tab ─────────────────────────────── -->
+          <section class="admin-tab-panel hidden" id="tab-schedule">
+            <div class="admin-panel-header">
+              <h2>Schedule</h2>
+              <button class="btn-submit btn-add" id="openAddScheduleBtn">+ Add Schedule Item</button>
+            </div>
+            <div class="admin-table-wrap">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Start</th>
+                    <th>End</th>
+                    <th>Title</th>
+                    <th>Pinned</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="scheduleTableBody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- ── Live Event tab ───────────────────────────── -->
+          <section class="admin-tab-panel hidden" id="tab-live">
+            <div class="admin-panel-header">
+              <h2>Live Event</h2>
+            </div>
+
+            <div class="admin-table-wrap" style="padding:1.25rem;margin-bottom:1.5rem;">
+              <h3 class="sub-entries-title" style="display:flex;align-items:center;gap:0.75rem;">
+                Live Mode
+                <span id="liveStatusBadge" class="history-action" style="font-size:0.55rem;">OFFLINE</span>
+              </h3>
+              <form id="liveForm" novalidate>
+                <div class="checkbox-row">
+                  <input type="checkbox" id="live-isLive" />
+                  <label for="live-isLive">Site is Live</label>
+                </div>
+                <div class="field full-width">
+                  <label for="live-title">Live Banner Title</label>
+                  <input type="text" id="live-title" placeholder="e.g. VGF 18 — LIVE NOW" />
+                </div>
+                <button type="submit" class="btn-submit" id="liveSubmitBtn">Save Live Settings</button>
+                <div class="form-status" id="liveStatus" aria-live="polite"></div>
+              </form>
+            </div>
+
+            <div class="admin-table-wrap" style="padding:1.25rem;">
+              <h3 class="sub-entries-title">Donation Settings</h3>
+              <form id="donationForm" novalidate>
+                <div class="form-grid">
+                  <div class="checkbox-row full-width">
+                    <input type="checkbox" id="don-enabled" />
+                    <label for="don-enabled">Show Donation Section</label>
+                  </div>
+                  <div class="field full-width">
+                    <label for="don-headline">Headline</label>
+                    <input type="text" id="don-headline" placeholder="e.g. Donate to Extra Life" />
+                  </div>
+                  <div class="field full-width">
+                    <label for="don-blurb">Blurb</label>
+                    <textarea id="don-blurb" placeholder="Short paragraph about the cause…"></textarea>
+                  </div>
+                  <div class="field">
+                    <label for="don-primary-label">Primary Link Label</label>
+                    <input type="text" id="don-primary-label" placeholder="e.g. Donate to ExtraLife" />
+                  </div>
+                  <div class="field">
+                    <label for="don-primary-url">Primary Link URL</label>
+                    <input type="text" id="don-primary-url" placeholder="https://www.extra-life.org/participants/VGF" />
+                  </div>
+                  <div class="field">
+                    <label for="don-secondary-label">Secondary Link Label</label>
+                    <input type="text" id="don-secondary-label" placeholder="optional" />
+                  </div>
+                  <div class="field">
+                    <label for="don-secondary-url">Secondary Link URL</label>
+                    <input type="text" id="don-secondary-url" placeholder="optional" />
+                  </div>
+                  <div class="field">
+                    <label for="don-goal">Goal Amount ($)</label>
+                    <input type="number" id="don-goal" min="0" placeholder="optional" />
+                  </div>
+                  <div class="field">
+                    <label for="don-raised">Raised Amount ($)</label>
+                    <input type="number" id="don-raised" min="0" placeholder="optional" />
+                  </div>
+                </div>
+                <button type="submit" class="btn-submit" id="donationSubmitBtn">Save Donation Settings</button>
+                <div class="form-status" id="donationStatus" aria-live="polite"></div>
+              </form>
             </div>
           </section>
 
@@ -986,6 +1106,81 @@
         <button type="button" class="btn-signout" id="playerConfirmBackBtn" style="margin-top:1rem;">Back</button>
         <button type="button" class="btn-submit" id="playerConfirmUseBtn">Use This Data</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ── Add/Edit Stream modal ────────────────────────────── -->
+  <div class="player-modal-overlay" id="streamModal" hidden aria-modal="true" role="dialog" aria-label="Stream Form">
+    <div class="player-modal-box admin-modal-box">
+      <button class="player-modal-close" id="streamModalClose" aria-label="Close">&times;</button>
+      <h2 class="admin-modal-title" id="streamModalTitle">Add a Stream</h2>
+      <form id="streamForm" novalidate>
+        <div class="form-grid">
+          <div class="field full-width">
+            <label for="s-label">Label *</label>
+            <input type="text" id="s-label" placeholder="e.g. Main Stage" required />
+          </div>
+          <div class="field">
+            <label for="s-platform">Platform *</label>
+            <select id="s-platform" required>
+              <option value="twitch">Twitch</option>
+              <option value="youtube">YouTube</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="s-order">Order</label>
+            <input type="number" id="s-order" min="0" placeholder="0" />
+          </div>
+          <div class="field full-width" id="s-twitch-field">
+            <label for="s-channel">Twitch Channel Name *</label>
+            <input type="text" id="s-channel" placeholder="e.g. videogamefestival" />
+          </div>
+          <div class="field full-width" id="s-youtube-field" hidden>
+            <label for="s-youtube-id">YouTube Live Video ID *</label>
+            <input type="text" id="s-youtube-id" placeholder="e.g. dQw4w9WgXcQ (the live broadcast's video id)" />
+          </div>
+          <div class="checkbox-row full-width">
+            <input type="checkbox" id="s-active" checked />
+            <label for="s-active">Active (shown in live grid)</label>
+          </div>
+        </div>
+        <button type="submit" class="btn-submit" id="streamSubmitBtn">Add Stream</button>
+        <div class="form-status" id="streamStatus" aria-live="polite"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Add/Edit Schedule Item modal ─────────────────────── -->
+  <div class="player-modal-overlay" id="scheduleModal" hidden aria-modal="true" role="dialog" aria-label="Schedule Item Form">
+    <div class="player-modal-box admin-modal-box">
+      <button class="player-modal-close" id="scheduleModalClose" aria-label="Close">&times;</button>
+      <h2 class="admin-modal-title" id="scheduleModalTitle">Add a Schedule Item</h2>
+      <form id="scheduleForm" novalidate>
+        <div class="form-grid">
+          <div class="field full-width">
+            <label for="sch-title">Title *</label>
+            <input type="text" id="sch-title" placeholder="e.g. Opening Ceremony" required />
+          </div>
+          <div class="field full-width">
+            <label for="sch-description">Description</label>
+            <textarea id="sch-description" placeholder="optional"></textarea>
+          </div>
+          <div class="field">
+            <label for="sch-start">Start Time *</label>
+            <input type="datetime-local" id="sch-start" required />
+          </div>
+          <div class="field">
+            <label for="sch-end">End Time</label>
+            <input type="datetime-local" id="sch-end" />
+          </div>
+          <div class="checkbox-row full-width">
+            <input type="checkbox" id="sch-pinned" />
+            <label for="sch-pinned">Pinned (force to top)</label>
+          </div>
+        </div>
+        <button type="submit" class="btn-submit" id="scheduleSubmitBtn">Add Schedule Item</button>
+        <div class="form-status" id="scheduleStatus" aria-live="polite"></div>
+      </form>
     </div>
   </div>
 

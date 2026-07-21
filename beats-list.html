@@ -128,21 +128,9 @@
 
   <script type="module">
     // ── Firebase SDK (CDN, no build step required) ──────────────────────────
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
     import { getFirestore, collection, getDocs, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+    import { app } from './js/firebase-config.js';
 
-    // ── TODO: Replace this config object with your own from Firebase console ──
-    // Firebase console > Project Settings > Your apps > SDK setup and configuration
-    const firebaseConfig = {
-      apiKey: "AIzaSyAivaXUB_eCki-I6H2kgYasRNoiVNzEaZw",
-      authDomain: "video-game-festival.firebaseapp.com",
-      projectId: "video-game-festival",
-      storageBucket: "video-game-festival.firebasestorage.app",
-      messagingSenderId: "962832070480",
-      appId: "1:962832070480:web:eaea96982709155f561e55",
-    };
-
-    const app = initializeApp(firebaseConfig);
     const db  = getFirestore(app);
 
     // Show loading state while Firestore data arrives
