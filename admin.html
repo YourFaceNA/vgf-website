@@ -866,6 +866,22 @@
               </form>
             </div>
 
+            <div class="admin-table-wrap" style="padding:1.25rem;margin-bottom:1.5rem;">
+              <h3 class="sub-entries-title">Schedule Display</h3>
+              <form id="scheduleViewForm" novalidate>
+                <div class="field full-width">
+                  <label for="schedule-view-mode">Layout</label>
+                  <select id="schedule-view-mode">
+                    <option value="list">List (grouped by day)</option>
+                    <option value="grid">4-Column Day Grid</option>
+                    <option value="timeGrid">Time Grid (Google Calendar style)</option>
+                  </select>
+                </div>
+                <button type="submit" class="btn-submit" id="scheduleViewSubmitBtn">Save Schedule Display</button>
+                <div class="form-status" id="scheduleViewStatus" aria-live="polite"></div>
+              </form>
+            </div>
+
             <div class="admin-table-wrap" style="padding:1.25rem;">
               <h3 class="sub-entries-title">Donation Settings</h3>
               <form id="donationForm" novalidate>

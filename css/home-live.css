@@ -367,6 +367,109 @@
   box-shadow: 0 0 16px rgba(255, 140, 0, 0.25);
 }
 
+/* ── Schedule: 4-Column Day Grid ──────────────────────────────────────── */
+.schedule-grid {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+}
+
+.schedule-grid-column {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.schedule-grid-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.schedule-grid-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+}
+
+.schedule-grid-card .schedule-item-time {
+  min-width: 0;
+  margin-bottom: 0.3rem;
+}
+
+.schedule-grid-card .schedule-item-title {
+  font-size: 0.9rem;
+}
+
+/* ── Schedule: Time Grid (Google Calendar style) ─────────────────────── */
+.schedule-timegrid {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  gap: 0;
+  align-items: flex-start;
+  overflow-x: auto;
+}
+
+.schedule-timegrid-axis-wrap {
+  flex: 0 0 60px;
+}
+
+.schedule-timegrid-axis {
+  position: relative;
+  border-right: 1px solid var(--border);
+}
+
+.schedule-timegrid-hour {
+  height: 60px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  transform: translateY(-0.6em);
+  padding-right: 0.5rem;
+  text-align: right;
+}
+
+.schedule-timegrid-column-wrap {
+  flex: 1 1 0;
+  min-width: 160px;
+  border-left: 1px solid var(--border);
+}
+
+.schedule-timegrid-column {
+  position: relative;
+  background: var(--bg-card);
+}
+
+.schedule-timegrid-event {
+  position: absolute;
+  background: rgba(255, 140, 0, 0.18);
+  border: 1px solid var(--orange);
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+  overflow: hidden;
+  font-size: 0.75rem;
+}
+
+.schedule-timegrid-event .schedule-item-title {
+  font-size: 0.75rem;
+  gap: 0.3rem;
+}
+
+.schedule-timegrid-event.schedule-item--current {
+  border-left: 3px solid var(--orange);
+  box-shadow: 0 0 12px rgba(255, 140, 0, 0.35);
+}
+
+@media (max-width: 800px) {
+  .schedule-grid { flex-direction: column; }
+  .schedule-timegrid-column-wrap { min-width: 140px; }
+}
+
 .schedule-section--live .schedule-section-heading::after {
   content: ' — Happening Now / Next';
 }

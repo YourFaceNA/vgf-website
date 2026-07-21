@@ -32,7 +32,7 @@
   <!-- ===== PAGE HEADER ===== -->
   <header class="page-header">
     <h1>Player Profiles</h1>
-    <p>Meet the competitors of VGF — veterans and newcomers alike! <br> (10 beats are required to earn a profile card)</p>
+    <p>Meet the competitors of VGF — veterans and newcomers alike!</p>
   </header>
 
   <!-- ===== CONTENT ===== -->
@@ -53,12 +53,11 @@
       <div style="flex:1;position:relative;">
         <input type="search" id="playerSearch" placeholder="Search players…"
           style="width:100%;padding:0.75rem 1rem 0.75rem 2.75rem;background:#0d0d1a;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Press Start 2P',monospace;font-size:0.6rem;letter-spacing:0.05em;outline:none;box-sizing:border-box;transition:border-color 0.2s;"
-          oninput="filterPlayers(this.value)"
           onfocus="this.style.borderColor='var(--blue-glow)'"
           onblur="this.style.borderColor='var(--border)'" />
         <span style="position:absolute;left:0.9rem;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:1rem;pointer-events:none;">🔍</span>
       </div>
-      <select id="playerSort" onchange="sortPlayers(this.value)"
+      <select id="playerSort"
         style="padding:0.75rem 0.75rem;background:#0d0d1a;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Press Start 2P',monospace;font-size:0.55rem;outline:none;cursor:pointer;transition:border-color 0.2s;white-space:nowrap;"
         onfocus="this.style.borderColor='var(--blue-glow)'"
         onblur="this.style.borderColor='var(--border)'">
@@ -80,7 +79,7 @@
 
     <!-- Stats Note -->
     <p style="text-align:center;color:var(--text-muted);font-size:0.8rem;margin-top:2rem;">
-      Stats reflect all-time VGF totals. Player profiles are updated after each annual event.
+      Stats reflect all-time VGF totals. <br> Pro card 10 beats requirement can be done across multiple sanctioned events.
     </p>
 
   </main>
@@ -130,8 +129,61 @@
     toggle.addEventListener('click', () => links.classList.toggle('open'));
     links.querySelectorAll('a').forEach(a => a.addEventListener('click', () => links.classList.remove('open')));
 
+    /* ---- Shared game-stat helpers (used by both card rendering and the modal) ---- */
+    const PLAYER_SEP = /\s*\/\s*|\s*&\s*|\s*,\s*/;
+    let allGamesCache = null;
+
+    async function loadAllGames() {
+      if (allGamesCache) return allGamesCache;
+      const snap = await getDocs(query(collection(db, 'games'), orderBy('num')));
+      allGamesCache = snap.docs.map(d => d.data());
+      return allGamesCache;
+    }
+
+    function playerInGame(playersStr, playerKey) {
+      return playersStr.split(PLAYER_SEP).map(p => p.trim()).some(p => p === playerKey);
+    }
+
+    function topValue(arr) {
+      if (!arr.length) return null;
+      const freq = {};
+      arr.forEach(v => { freq[v] = (freq[v] || 0) + 1; });
+      return Object.entries(freq).sort((a,b) => b[1]-a[1])[0][0];
+    }
+
+    // Computes a player's live stats (games beaten, distinct events attended,
+    // hero beats, top genre/system) from the games collection, so profile
+    // stats are always accurate without needing an admin to manually re-save
+    // the player whenever a new game/beat is added. MVPs is intentionally not
+    // computed here — there's no per-game "MVP" flag, so it stays a
+    // manually-entered field on the player doc.
+    function computePlayerStats(playerKey, allGames) {
+      const matchedEntries = [];
+      allGames.forEach(r => {
+        if (r.is_sub) return;
+        const inParent = playerInGame(r.players || '', playerKey);
+        const matchingSubs = (r.subs || []).filter(s => playerInGame(s.players || '', playerKey));
+        if (inParent || matchingSubs.length) {
+          matchedEntries.push({ parent: r, inParent, matchingSubs });
+        }
+      });
+
+      const directRecords = [];
+      matchedEntries.forEach(({ parent, inParent, matchingSubs }) => {
+        if (inParent) directRecords.push(parent);
+        matchingSubs.forEach(s => directRecords.push({ ...s, event: parent.event }));
+      });
+
+      const events     = new Set(directRecords.map(r => r.event)).size;
+      const heroBeats  = directRecords.filter(r => r.hero_beat).length;
+      const topGenre   = topValue(directRecords.map(r => r.genre).filter(Boolean));
+      const topSystem  = topValue(directRecords.map(r => r.system).filter(Boolean));
+
+      return { matchedEntries, directRecords, games: directRecords.length, events, heroBeats, topGenre, topSystem };
+    }
+
     /* ---- Render player cards from Firestore ---- */
-    function buildCardHTML(p) {
+    function buildCardHTML(p, stats) {
       const escAttr = s => String(s || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
       const esc     = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
@@ -153,17 +205,23 @@
           <h3>${esc(p.handle)}</h3>
           <div class="player-tag">${esc(p.realName || p.playerKey)}</div>
           <div class="player-stats">
-            <div class="stat"><div class="stat-val">${p.events || 0}</div><div class="stat-label">Events</div></div>
-            <div class="stat"><div class="stat-val">${p.games || 0}</div><div class="stat-label">Games</div></div>
+            <div class="stat"><div class="stat-val">${stats.events}</div><div class="stat-label">Events</div></div>
+            <div class="stat"><div class="stat-val">${stats.games}</div><div class="stat-label">Games</div></div>
             <div class="stat"><div class="stat-val">${p.mvps || 0}</div><div class="stat-label">MVPs</div></div>
           </div>
-          <div class="player-fave">Most Played Genre: <span>${esc(p.favoriteGenre || '—')}</span></div>
+          <div class="player-fave">Most Played Genre: <span>${esc(p.favoriteGenre || stats.topGenre || '—')}</span></div>
         </div>
       </div>`;
     }
 
-    // Fetch players and render cards
-    const playersSnap = await getDocs(query(collection(db, 'players'), orderBy('playerKey')));
+    // Fetch players and games up front — Events/Games stats are computed live
+    // from the games collection (see computePlayerStats) so they never go
+    // stale when a game is added/edited elsewhere; only MVPs stays a stored
+    // field on the player doc since it isn't derivable from game records.
+    const [playersSnap, allGames] = await Promise.all([
+      getDocs(query(collection(db, 'players'), orderBy('playerKey'))),
+      loadAllGames(),
+    ]);
     const playersData = playersSnap.docs.map(d => d.data());
 
     const grid = document.getElementById('playersGrid');
@@ -173,8 +231,9 @@
 
     // Render player cards
     playersData.forEach(p => {
+      const stats = computePlayerStats(p.playerKey, allGames);
       const temp = document.createElement('div');
-      temp.innerHTML = buildCardHTML(p);
+      temp.innerHTML = buildCardHTML(p, stats);
       const card = temp.firstElementChild;
       card.addEventListener('click', () => openPlayerModal(card));
       grid.appendChild(card);
@@ -188,9 +247,9 @@
       <div class="player-avatar" style="background:linear-gradient(135deg,#0a2b0a,#143b14);">✨</div>
       <div class="player-info">
         <h3>You?</h3>
-        <div class="player-tag" style="color:var(--green-neon);">Register for 2026</div>
+        <div class="player-tag" style="margin-top:0.75rem;font-size:0.85rem;color:var(--green-neon);">Want a pro card?</div>
         <div style="margin-top:0.75rem;font-size:0.85rem;color:var(--text-muted);line-height:1.7;">
-          Want a profile card too? <strong style="color:var(--green-neon);">Sign up, beat 10 games, and make your mark!</strong>
+           <strong style="color:var(--text-muted);">Come to VGF, beat 10 games, and make your mark!</strong>
         </div>
         <div style="margin-top:1rem;"></div>
       </div>`;
@@ -245,30 +304,14 @@
       cards.forEach(card => grid.appendChild(card));
     }
 
+    /* Wire up search + sort controls (module scope, so must use addEventListener
+       rather than inline onchange/oninput handlers which can't see these functions) */
+    document.getElementById('playerSearch').addEventListener('input', e => filterPlayers(e.target.value));
+    document.getElementById('playerSort').addEventListener('change', e => sortPlayers(e.target.value));
+
     /* ---- Player Profile Modal ---- */
-    const PLAYER_SEP = /\s*\/\s*|\s*&\s*|\s*,\s*/;
-    let allGamesCache = null;
-
-    async function loadAllGames() {
-      if (allGamesCache) return allGamesCache;
-      const snap = await getDocs(query(collection(db, 'games'), orderBy('num')));
-      allGamesCache = snap.docs.map(d => d.data());
-      return allGamesCache;
-    }
-
-    function playerInGame(playersStr, playerKey) {
-      return playersStr.split(PLAYER_SEP).map(p => p.trim()).some(p => p === playerKey);
-    }
-
     function escHtml(s) {
       return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    }
-
-    function topValue(arr) {
-      if (!arr.length) return null;
-      const freq = {};
-      arr.forEach(v => { freq[v] = (freq[v] || 0) + 1; });
-      return Object.entries(freq).sort((a,b) => b[1]-a[1])[0][0];
     }
 
     async function openPlayerModal(card) {
@@ -326,29 +369,7 @@
       /* Load & render games */
       try {
         const allGames = await loadAllGames();
-
-        // Build list of { parent, subs } where player appears in parent and/or subs
-        const matchedEntries = [];
-        allGames.forEach(r => {
-          if (r.is_sub) return;
-          const inParent = playerInGame(r.players || '', playerKey);
-          const matchingSubs = (r.subs || []).filter(s => playerInGame(s.players || '', playerKey));
-          if (inParent || matchingSubs.length) {
-            matchedEntries.push({ parent: r, inParent, matchingSubs });
-          }
-        });
-
-        // Flatten all records the player personally played for stat computation
-        const directRecords = [];
-        matchedEntries.forEach(({ parent, inParent, matchingSubs }) => {
-          if (inParent) directRecords.push(parent);
-          matchingSubs.forEach(s => directRecords.push({ ...s, event: parent.event }));
-        });
-
-        /* Compute extra stats */
-        const heroBeats = directRecords.filter(r => r.hero_beat).length;
-        const topGenre  = topValue(directRecords.map(r => r.genre).filter(Boolean));
-        const topSystem = topValue(directRecords.map(r => r.system).filter(Boolean));
+        const { matchedEntries, heroBeats, topGenre, topSystem } = computePlayerStats(playerKey, allGames);
 
         /* Append computed stats */
         if (heroBeats > 0 || topGenre || topSystem) {

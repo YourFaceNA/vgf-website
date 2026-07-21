@@ -17,14 +17,16 @@ function escHtml(str) {
 
 // ── Live mode ────────────────────────────────────────────────────────────
 let isLiveMode = false;
+let scheduleViewMode = 'list'; // 'list' | 'grid' | 'timeGrid', admin-configurable
 
 function initLiveMode() {
   onSnapshot(doc(db, 'siteConfig', 'liveEvent'), snap => {
     const data = snap.exists() ? snap.data() : {};
     isLiveMode = !!data.isLive;
+    scheduleViewMode = data.scheduleViewMode || 'list';
     renderLiveBanner(data);
     document.body.classList.toggle('is-live', isLiveMode);
-    renderSchedule(); // re-render with live styling toggled
+    renderSchedule(); // re-render with live styling / view mode toggled
   }, err => console.error('Live mode listener failed', err));
 }
 
@@ -348,49 +350,73 @@ async function loadSchedule() {
   renderSchedule();
 }
 
-function renderSchedule() {
-  const section = document.getElementById('schedule');
-  const list = document.getElementById('scheduleList');
-  if (!list || !section) return;
-
-  section.classList.toggle('schedule-section--live', isLiveMode);
-
-  const now = new Date();
-  const items = isLiveMode ? scheduleItems : scheduleItems.slice(0, 5);
-
-  if (items.length === 0) {
-    list.innerHTML = '<li class="admin-table-empty">No schedule items yet.</li>';
-    return;
-  }
-
-  // Group items by calendar day so the schedule reads as one section per day
-  // rather than a single flat list. Items with no startTime (shouldn't
-  // normally happen) fall into an "Unscheduled" bucket at the end.
-  const dayGroups = new Map(); // dayKey -> { label, items[] }
+// Groups a flat array of schedule items into ordered day buckets. Items with
+// no startTime (shouldn't normally happen) fall into a trailing "Unscheduled"
+// bucket. Shared by all three view-mode renderers.
+function groupByDay(items) {
+  const dayGroups = new Map(); // dayKey -> { label, date, items[] }
   items.forEach(item => {
-    const dayKey = item.startTime
-      ? item.startTime.toDateString()
-      : 'unscheduled';
+    const dayKey = item.startTime ? item.startTime.toDateString() : 'unscheduled';
     if (!dayGroups.has(dayKey)) {
       dayGroups.set(dayKey, {
         label: item.startTime
           ? item.startTime.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
           : 'Unscheduled',
+        date: item.startTime || null,
         items: [],
       });
     }
     dayGroups.get(dayKey).items.push(item);
   });
+  return Array.from(dayGroups.values());
+}
 
-  list.innerHTML = Array.from(dayGroups.values()).map(group => {
+// Narrow/mobile viewports can't usefully show a multi-column calendar grid,
+// so Grid and Time Grid modes both fall back to the List layout below this.
+const SCHEDULE_GRID_MIN_WIDTH = 800;
+
+function renderSchedule() {
+  const section = document.getElementById('schedule');
+  const mount = document.getElementById('scheduleList');
+  if (!mount || !section) return;
+
+  section.classList.toggle('schedule-section--live', isLiveMode);
+
+  const items = isLiveMode ? scheduleItems : scheduleItems.slice(0, 5);
+
+  if (items.length === 0) {
+    mount.innerHTML = '<li class="admin-table-empty">No schedule items yet.</li>';
+    return;
+  }
+
+  const effectiveMode = window.innerWidth < SCHEDULE_GRID_MIN_WIDTH ? 'list' : scheduleViewMode;
+
+  if (effectiveMode === 'grid') {
+    renderScheduleGrid(mount, items);
+  } else if (effectiveMode === 'timeGrid') {
+    renderScheduleTimeGrid(mount, items);
+  } else {
+    renderScheduleList(mount, items);
+  }
+}
+
+function scheduleItemCard(item, now) {
+  const isCurrent = isLiveMode && item.startTime && (
+    item.startTime <= now && (!item.endTime || item.endTime >= now)
+  );
+  const timeLabel = item.startTime
+    ? item.startTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+    : '';
+  const sourceTag = item.source === 'calendar' ? '<span class="schedule-source-tag">Calendar</span>' : '';
+  return { isCurrent, timeLabel, sourceTag };
+}
+
+function renderScheduleList(mount, items) {
+  const now = new Date();
+  mount.className = 'schedule-list';
+  mount.innerHTML = groupByDay(items).map(group => {
     const itemsHtml = group.items.map(item => {
-      const isCurrent = isLiveMode && item.startTime && (
-        item.startTime <= now && (!item.endTime || item.endTime >= now)
-      );
-      const timeLabel = item.startTime
-        ? item.startTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
-        : '';
-      const sourceTag = item.source === 'calendar' ? '<span class="schedule-source-tag">Calendar</span>' : '';
+      const { isCurrent, timeLabel, sourceTag } = scheduleItemCard(item, now);
       return `
         <li class="schedule-item${isCurrent ? ' schedule-item--current' : ''}">
           <div class="schedule-item-time">${escHtml(timeLabel)}</div>
@@ -408,6 +434,108 @@ function renderSchedule() {
       </li>
     `;
   }).join('');
+}
+
+function renderScheduleGrid(mount, items) {
+  const now = new Date();
+  mount.className = '';
+  const dayGroups = groupByDay(items);
+  const columnsHtml = dayGroups.map(group => {
+    const cardsHtml = group.items.map(item => {
+      const { isCurrent, timeLabel, sourceTag } = scheduleItemCard(item, now);
+      return `
+        <div class="schedule-grid-card${isCurrent ? ' schedule-item--current' : ''}">
+          <div class="schedule-item-time">${escHtml(timeLabel)}</div>
+          <div class="schedule-item-title">${escHtml(item.title)}${sourceTag}</div>
+          ${item.description ? `<div class="schedule-item-desc">${escHtml(item.description)}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+    return `
+      <div class="schedule-grid-column">
+        <div class="schedule-day-heading">${escHtml(group.label)}</div>
+        <div class="schedule-grid-cards">${cardsHtml}</div>
+      </div>
+    `;
+  }).join('');
+  mount.innerHTML = `<li class="schedule-grid">${columnsHtml}</li>`;
+}
+
+const TIME_GRID_START_HOUR = 8;   // 8am
+const TIME_GRID_END_HOUR = 24;    // midnight
+const TIME_GRID_PX_PER_HOUR = 60;
+
+// Greedily assigns same-day overlapping items to side-by-side sub-columns so
+// they never visually overlap. Returns each item annotated with its column
+// index and the total column count for its overlap cluster.
+function assignOverlapColumns(items) {
+  const sorted = [...items]
+    .filter(i => i.startTime)
+    .sort((a, b) => a.startTime - b.startTime);
+  const columns = []; // array of "last end time" per column
+  const placed = sorted.map(item => {
+    const start = item.startTime;
+    const end = item.endTime && item.endTime > start ? item.endTime : new Date(start.getTime() + 30 * 60000);
+    let colIndex = columns.findIndex(endTime => endTime <= start);
+    if (colIndex === -1) {
+      colIndex = columns.length;
+      columns.push(end);
+    } else {
+      columns[colIndex] = end;
+    }
+    return { item, start, end, colIndex };
+  });
+  const totalColumns = Math.max(1, columns.length);
+  return placed.map(p => ({ ...p, totalColumns }));
+}
+
+function renderScheduleTimeGrid(mount, items) {
+  const now = new Date();
+  mount.className = '';
+  const dayGroups = groupByDay(items.filter(i => i.startTime));
+
+  const hourLabels = [];
+  for (let h = TIME_GRID_START_HOUR; h <= TIME_GRID_END_HOUR; h++) {
+    const label = new Date(2000, 0, 1, h % 24).toLocaleTimeString(undefined, { hour: 'numeric' });
+    hourLabels.push(`<div class="schedule-timegrid-hour">${escHtml(label)}</div>`);
+  }
+  const totalHeight = (TIME_GRID_END_HOUR - TIME_GRID_START_HOUR) * TIME_GRID_PX_PER_HOUR;
+
+  const columnsHtml = dayGroups.map(group => {
+    const placed = assignOverlapColumns(group.items);
+    const eventsHtml = placed.map(({ item, start, end, colIndex, totalColumns }) => {
+      const startHour = Math.max(TIME_GRID_START_HOUR, Math.min(TIME_GRID_END_HOUR, start.getHours() + start.getMinutes() / 60));
+      const endHour = Math.max(startHour + 0.5, Math.min(TIME_GRID_END_HOUR, end.getHours() + end.getMinutes() / 60));
+      const top = (startHour - TIME_GRID_START_HOUR) * TIME_GRID_PX_PER_HOUR;
+      const height = Math.max(24, (endHour - startHour) * TIME_GRID_PX_PER_HOUR);
+      const widthPct = 100 / totalColumns;
+      const leftPct = widthPct * colIndex;
+      const isCurrent = isLiveMode && item.startTime <= now && (!item.endTime || item.endTime >= now);
+      const sourceTag = item.source === 'calendar' ? '<span class="schedule-source-tag">Calendar</span>' : '';
+      return `
+        <div class="schedule-timegrid-event${isCurrent ? ' schedule-item--current' : ''}"
+             style="top:${top}px;height:${height}px;left:${leftPct}%;width:calc(${widthPct}% - 4px);">
+          <div class="schedule-item-title">${escHtml(item.title)}${sourceTag}</div>
+        </div>
+      `;
+    }).join('');
+    return `
+      <div class="schedule-timegrid-column-wrap">
+        <div class="schedule-day-heading">${escHtml(group.label)}</div>
+        <div class="schedule-timegrid-column" style="height:${totalHeight}px;">${eventsHtml}</div>
+      </div>
+    `;
+  }).join('');
+
+  mount.innerHTML = `
+    <li class="schedule-timegrid">
+      <div class="schedule-timegrid-axis-wrap">
+        <div class="schedule-day-heading">&nbsp;</div>
+        <div class="schedule-timegrid-axis" style="height:${totalHeight}px;">${hourLabels.join('')}</div>
+      </div>
+      ${columnsHtml}
+    </li>
+  `;
 }
 
 // ── Donation ─────────────────────────────────────────────────────────────
@@ -452,9 +580,18 @@ function renderDonation(data) {
   `;
 }
 
+function wireScheduleResize() {
+  let resizeTimeout;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(renderSchedule, 150);
+  });
+}
+
 // ── Bootstrap ────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   wireMultistreamControls();
+  wireScheduleResize();
   initLiveMode();
   loadStreams();
   loadDonation();

@@ -213,6 +213,7 @@ onAuthStateChanged(auth, async user => {
   loadStreamsTable();
   loadScheduleTable();
   loadLiveConfig();
+  loadScheduleViewConfig();
   loadDonationConfig();
   loadHistory();
 });
@@ -1062,6 +1063,43 @@ liveForm.addEventListener('submit', async e => {
   } catch (err) {
     console.error(err);
     setStatus(liveStatus, 'Error: ' + err.message, 'error');
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+const scheduleViewForm = document.getElementById('scheduleViewForm');
+const scheduleViewStatus = document.getElementById('scheduleViewStatus');
+
+async function loadScheduleViewConfig() {
+  try {
+    const snap = await getDoc(doc(db, 'siteConfig', 'liveEvent'));
+    const data = snap.exists() ? snap.data() : {};
+    document.getElementById('schedule-view-mode').value = data.scheduleViewMode || 'list';
+  } catch (e) {
+    console.error('Could not load schedule view config', e);
+  }
+}
+
+scheduleViewForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  const scheduleViewMode = document.getElementById('schedule-view-mode').value;
+  const submitBtn = document.getElementById('scheduleViewSubmitBtn');
+
+  submitBtn.disabled = true;
+  setStatus(scheduleViewStatus, 'Saving…', '');
+  try {
+    const user = auth.currentUser;
+    await setDoc(doc(db, 'siteConfig', 'liveEvent'), {
+      scheduleViewMode,
+      updatedAt: serverTimestamp(),
+      updatedBy: user.uid,
+    }, { merge: true });
+    await logHistory('edit', 'siteConfig', 'liveEvent', 'Schedule Display', { scheduleViewMode });
+    setStatus(scheduleViewStatus, 'Schedule display saved.', 'success');
+  } catch (err) {
+    console.error(err);
+    setStatus(scheduleViewStatus, 'Error: ' + err.message, 'error');
   } finally {
     submitBtn.disabled = false;
   }
